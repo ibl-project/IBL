@@ -61,6 +61,22 @@ const WhatsAppIcon = () => (
   </svg>
 );
 
+const LinkedInIcon = () => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M6.94 8.5H3.56V19h3.38V8.5ZM5.25 3C4.14 3 3.25 3.9 3.25 5s.89 2 2 2 2-.9 2-2-.89-2-2-2ZM20.75 12.98c0-3.17-1.69-4.64-3.95-4.64-1.82 0-2.64 1-3.09 1.7V8.5h-3.38V19h3.38v-5.2c0-1.37.26-2.7 1.95-2.7 1.67 0 1.69 1.56 1.69 2.79V19h3.4l-.01-6.02Z"
+      fill="#FFFFFF"
+    />
+  </svg>
+);
+
 // ---------------------------------------------------------------------------
 // Typed interface for footer nav items
 // ---------------------------------------------------------------------------
@@ -124,6 +140,12 @@ const SOCIAL_LINKS = [
     handle: "083130030546",
     href: "https://wa.me/6283130030546",
     label: "WhatsApp IBL 2K26",
+  },
+  {
+    icon: <LinkedInIcon />,
+    handle: "itsbasketballleague",
+    href: "https://www.linkedin.com/company/itsbasketballleague/",
+    label: "LinkedIn IBL 2K26",
   },
 ];
 
