@@ -12,7 +12,7 @@ const hollywood = localFont({
       style: "normal",
     },
     {
-      path: "../public/fonts/HollyWoodFont/SF Hollywood Hills Bold.ttf",
+      path: "../public/fonts/HollyWoodFont/SF Hollywood Hills Bold.ttf", 
       weight: "700",
       style: "normal",
     },
