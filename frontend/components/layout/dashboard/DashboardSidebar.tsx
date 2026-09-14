@@ -19,7 +19,7 @@ import {
  * Catatan untuk staff:
  * - Komponen sidebar kiri untuk dashboard (Photo 1 s/d Photo 5).
  */
-export const DashboardSidebar = () => {
+export const DashboardSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const pathname = usePathname();
 
   const isRouteActive = (route: string) => {
@@ -27,11 +27,11 @@ export const DashboardSidebar = () => {
   };
 
   return (
-    <aside className="w-[280px] bg-[#389F9D] flex flex-col h-full text-white shrink-0 shadow-xl z-20">
+    <aside className={`w-[280px] bg-[#389F9D] flex flex-col h-full text-white shrink-0 shadow-xl z-50 fixed md:relative transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
       {/* 1. Header Logo IBL 2K26 */}
       <div className="flex items-center justify-between px-6 py-8">
         <div className="flex items-center gap-3">
-          <button type="button" aria-label="Close menu" className="md:hidden">
+          <button type="button" aria-label="Close menu" className="md:hidden" onClick={onClose}>
             <X size={24} className="text-white hover:opacity-80 transition" />
           </button>
           <div className="hidden md:block">

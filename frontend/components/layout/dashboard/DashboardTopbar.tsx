@@ -8,13 +8,18 @@ import { Menu } from "lucide-react";
  * Catatan untuk staff:
  * - Komponen topbar navigasi atas untuk halaman dashboard.
  */
-export const DashboardTopbar = () => {
+export const DashboardTopbar = ({ onOpenSidebar }: { onOpenSidebar: () => void }) => {
   return (
-    <header className="w-full flex items-center justify-between px-8 md:px-12 pt-8 pb-2">
+    <header className="w-full flex items-center justify-between px-4 md:px-12 pt-6 md:pt-8 pb-2">
       {/* 1. Tombol Toggle Sidebar Mobile */}
-      <div className="md:hidden">
-        <button type="button" aria-label="Toggle menu" className="p-2 text-gray-600 hover:bg-black/5 rounded-lg transition-colors">
-          <Menu size={24} />
+      <div className="flex items-center md:hidden">
+        <button 
+          type="button" 
+          aria-label="Toggle menu" 
+          onClick={onOpenSidebar}
+          className="p-1 text-gray-700 hover:bg-black/5 rounded-lg transition-colors"
+        >
+          <Menu size={28} />
         </button>
       </div>
       
