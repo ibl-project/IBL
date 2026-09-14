@@ -1,31 +1,54 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import { TeamsLandingSection } from "@/components/sections/TeamsPage/TeamsLandingSection";
 import { TeamDetailSection } from "@/components/sections/TeamsPage/TeamDetailSection";
 import { TeamEditSection } from "@/components/sections/TeamsPage/TeamEditSection";
 
-/**
- * Teams Page
- * Path: /teams
- *
- * Catatan untuk staff:
- * Halaman ini menyusun komponen-komponen section Teams:
- * 1. TeamsLandingSection: Tampilan awal grid logo tim & search (Photo 1)
- * 2. TeamDetailSection: Tampilan detail statistik tim setelah logo diklik (Photo 3)
- * 3. TeamEditSection: Tampilan form edit statistik tim & pemain (Photo 3 Edit)
- *
- * Staff dapat mengatur conditional rendering (state / tab) atau alur navigasi antar section di sini.
- */
 export default function TeamsPage() {
+  const [currentView, setCurrentView] = useState<"landing" | "detail" | "edit">("landing");
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+
+  const handleTeamClick = (teamName: string) => {
+    setSelectedTeam(teamName);
+    setCurrentView("detail");
+  };
+
+  const handleBackToLanding = () => {
+    setCurrentView("landing");
+    setSelectedTeam(null);
+  };
+
+  const handleGoToEdit = () => {
+    setCurrentView("edit");
+  };
+
+  const handleBackToDetail = () => {
+    setCurrentView("detail");
+  };
+
   return (
-    <div>
-      {/* 1. Landing Teams (Photo 1) */}
-      <TeamsLandingSection />
+    <div className="w-full h-full">
+      {currentView === "landing" && (
+        <TeamsLandingSection onTeamClick={handleTeamClick} />
+      )}
 
-      {/* 2. Detail Teams (Photo 3) */}
-      <TeamDetailSection />
+      {currentView === "detail" && selectedTeam && (
+        <TeamDetailSection 
+          teamName={selectedTeam} 
+          onBack={handleBackToLanding} 
+          onEdit={handleGoToEdit} 
+        />
+      )}
 
-      {/* 3. Edit Detail Teams (Photo 3 Mode Edit) */}
-      <TeamEditSection />
+      {currentView === "edit" && selectedTeam && (
+        <TeamEditSection 
+          teamName={selectedTeam} 
+          onBack={handleBackToDetail} 
+          onCancel={handleBackToDetail}
+          onSave={handleBackToDetail}
+        />
+      )}
     </div>
   );
 }
