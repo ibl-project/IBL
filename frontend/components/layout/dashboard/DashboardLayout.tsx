@@ -20,14 +20,14 @@ export const DashboardLayout = ({
   children: React.ReactNode;
 }) => {
   return (
-    <div id="dashboard-layout">
+    <div className="flex h-screen w-full bg-[#E3EDE8] overflow-hidden font-sans">
       {/* 1. Sidebar Navigasi */}
       <DashboardSidebar />
 
       {/* 2. Konten Utama (Topbar + Halaman) */}
-      <div id="dashboard-main-area">
+      <div className="flex flex-col flex-1 overflow-y-auto">
         <DashboardTopbar />
-        <main>{children}</main>
+        <main className="flex-1 px-8 md:px-12 pb-8 md:pb-12 pt-0">{children}</main>
       </div>
     </div>
   );
