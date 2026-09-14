@@ -24,7 +24,7 @@ export function PublicLayoutWrapper({
 
   // Cek apakah halaman saat ini merupakan bagian dari dashboard (Teams, Scoring)
   const isDashboardRoute =
-    pathname?.startsWith("/teams") || pathname?.startsWith("/scoring");
+    pathname?.startsWith("/teams") || pathname?.startsWith("/scoring") || pathname?.startsWith("/dummyscoring");
 
   if (isDashboardRoute) {
     return <>{children}</>;

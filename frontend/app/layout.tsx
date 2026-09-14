@@ -1,7 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { PublicLayoutWrapper } from "@/components/layout/PublicLayoutWrapper";
+
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700", "800"],
+  subsets: ["latin"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 const hollywood = localFont({
   src: [
@@ -69,7 +77,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${hollywood.variable} ${crosner.variable} ${drowner.variable} h-full antialiased`}
+      className={`${hollywood.variable} ${crosner.variable} ${drowner.variable} ${poppins.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
