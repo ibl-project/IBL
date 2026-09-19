@@ -22,6 +22,13 @@ export const metadata: Metadata = {
   description: "Portal Manajemen Pertandingan & Tim IBL 2K26",
 };
 
+/**
+ * TODO [BACKEND / AUTH GUARD]:
+ * Rute di dalam group (dashboard) ini mencakup /teams dan /scoring.
+ * - Proteksi rute saat ini diarahkan melalui frontend/middleware.ts.
+ * - Jika ingin validasi sesi di sisi server component, dapat mengecek cookie
+ *   atau memverifikasi session JWT di sini sebelum merender children.
+ */
 export default function DashboardRouteGroupLayout({
   children,
 }: Readonly<{

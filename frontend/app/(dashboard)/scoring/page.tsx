@@ -1,36 +1,86 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import { ScoringLandingSection } from "@/components/sections/ScoringPage/ScoringLandingSection";
 import { ScoringSearchTeamSection } from "@/components/sections/ScoringPage/ScoringSearchTeamSection";
 import { ScoringBoxScoreSection } from "@/components/sections/ScoringPage/ScoringBoxScoreSection";
-import { ScoringEditSection } from "@/components/sections/ScoringPage/ScoringEditSection";
 
-/**
- * Scoring Page
- * Path: /scoring
- *
- * Catatan untuk staff:
- * Halaman ini menyusun komponen-komponen section Scoring:
- * 1. ScoringLandingSection: Tampilan awal "Belum ada scoring" & tombol "+ Add Scoring" (Photo 4)
- * 2. ScoringSearchTeamSection: Tampilan cari Tim 1 vs Tim 2 setelah menekan Add Scoring (Photo 5)
- * 3. ScoringBoxScoreSection: Tampilan live box score tabel setelah kedua tim dipilih (Photo 2)
- * 4. ScoringEditSection: Tampilan mode edit skor manual (Photo 2 Mode Edit)
- *
- * Staff dapat mengatur alur pergantian antar section (state / conditional rendering) di sini.
- */
+type Match = {
+  id: number;
+  mode: "SEARCH" | "BOX_SCORE";
+  team1?: string;
+  team2?: string;
+  players1?: any[];
+  players2?: any[];
+};
+
 export default function ScoringPage() {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
+  const [nextId, setNextId] = useState(1);
+
+  const handleAddMatch = () => {
+    const newMatch: Match = { id: nextId, mode: "SEARCH" };
+    setMatches([...matches, newMatch]);
+    setActiveMatchId(nextId);
+    setNextId(nextId + 1);
+  };
+
+  const handleRemoveMatch = (id: number) => {
+    const newMatches = matches.filter(m => m.id !== id);
+    setMatches(newMatches);
+    if (newMatches.length === 0) {
+      setNextId(1);
+    }
+    if (activeMatchId === id) {
+      setActiveMatchId(newMatches.length > 0 ? newMatches[newMatches.length - 1].id : null);
+    }
+  };
+
+  const handleCreateMatch = (team1: string, team2: string, players1: any[], players2: any[]) => {
+    setMatches(matches.map(m => {
+      if (m.id === activeMatchId) {
+        return {
+          ...m,
+          mode: "BOX_SCORE",
+          team1,
+          team2,
+          players1,
+          players2
+        };
+      }
+      return m;
+    }));
+  };
+
+  const activeMatch = matches.find(m => m.id === activeMatchId);
+
   return (
-    <div>
-      {/* 1. Landing Scoring (Photo 4) */}
-      <ScoringLandingSection />
-
-      {/* 2. Search Team 1 vs Team 2 (Photo 5) */}
-      <ScoringSearchTeamSection />
-
-      {/* 3. Live Box Score Table (Photo 2) */}
-      <ScoringBoxScoreSection />
-
-      {/* 4. Edit Box Score (Photo 2 Mode Edit) */}
-      <ScoringEditSection />
+    <div className="bg-[#e1e7ea] min-h-screen w-full px-6 py-6 md:px-[46px]">
+      {matches.length === 0 ? (
+        <ScoringLandingSection onAddScoring={handleAddMatch} />
+      ) : activeMatch?.mode === "BOX_SCORE" ? (
+        <ScoringBoxScoreSection 
+          matches={matches}
+          activeMatchId={activeMatchId}
+          onAddScoring={handleAddMatch}
+          onRemoveMatch={handleRemoveMatch}
+          onSelectMatch={setActiveMatchId}
+          team1={activeMatch.team1!}
+          team2={activeMatch.team2!}
+          players1={activeMatch.players1!}
+          players2={activeMatch.players2!}
+        />
+      ) : (
+        <ScoringSearchTeamSection 
+          matches={matches} 
+          activeMatchId={activeMatchId}
+          onAddScoring={handleAddMatch}
+          onRemoveMatch={handleRemoveMatch}
+          onSelectMatch={setActiveMatchId}
+          onCreate={handleCreateMatch}
+        />
+      )}
     </div>
   );
 }
