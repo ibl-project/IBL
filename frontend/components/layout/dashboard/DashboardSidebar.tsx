@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -38,6 +38,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onToggle,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
 
   // Definisi struktur navigasi menu
   const menuGroups: MenuGroup[] = [
@@ -142,8 +143,17 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     },
   ];
 
-  const handleLogout = () => {
-    console.log("Logout triggered");
+  const handleLogout = async () => {
+    /**
+     * =========================================================================
+     * TODO [BACKEND]: Integrasi Endpoint Logout
+     * =========================================================================
+     * 1. Panggil endpoint logout BE jika ada (e.g. POST /api/auth/logout).
+     * 2. Bersihkan token/cookie otentikasi.
+     * 3. Bersihkan cache/state user jika diperlukan.
+     * =========================================================================
+     */
+    router.push("/login");
   };
 
   return (
@@ -259,12 +269,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                       ) : (
                         <div
                           key={item.name}
-                          onClick={() => {
-                            console.log(
-                              `Menu "${item.name}" diklik (Belum ada rute). Silakan atur path-nya.`
-                            );
-                          }}
-                          className="w-full block focus:outline-hidden"
+                          className="w-full block focus:outline-hidden opacity-75 cursor-not-allowed"
                           title={`Halaman ${item.name} sedang dalam pengembangan`}
                         >
                           {itemContent}

@@ -3,11 +3,37 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    /**
+     * =========================================================================
+     * TODO [BACKEND]: Integrasi Endpoint Otentikasi Login
+     * =========================================================================
+     * 1. Kirim kredensial ke API Backend:
+     *    const res = await fetch('/api/auth/login', {
+     *      method: 'POST',
+     *      headers: { 'Content-Type': 'application/json' },
+     *      body: JSON.stringify({ email, password, rememberMe }),
+     *    });
+     * 2. Simpan token/session (cookie HTTP-only atau localStorage).
+     * 3. Tangani error response jika kredensial tidak sesuai.
+     * =========================================================================
+     */
+
+    // Alihkan langsung ke halaman Teams setelah login berhasil
+    router.push('/teams');
+  };
 
   return (
     <div className="flex flex-col-reverse md:flex-row min-h-screen bg-white font-sans">
@@ -64,7 +90,7 @@ export default function LoginPage() {
           }}
           className="w-full max-w-[400px] z-10"
         >
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             
             {/* Input Email */}
             <div className="relative mt-2">

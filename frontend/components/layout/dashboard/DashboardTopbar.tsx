@@ -52,7 +52,12 @@ export const DashboardTopbar: React.FC<DashboardTopbarProps> = ({
           )}
         </div>
 
-        {/* 2. User Profile Info */}
+        {/* 
+          2. User Profile Info 
+          TODO [BACKEND]: 
+          - Ambil data user aktif (nama, role, photoUrl) dari session auth / user context / API me.
+          - Gantikan teks hardcoded "Damen", "IBL 2K26", dan inisial avatar "D" dengan data dinamis.
+        */}
         <div className="flex items-center gap-3 ml-auto">
           <div className="flex flex-col text-right">
             <span className="text-sm font-semibold text-gray-800 leading-tight">
