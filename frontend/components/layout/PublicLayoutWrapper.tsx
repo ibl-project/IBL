@@ -22,9 +22,9 @@ export function PublicLayoutWrapper({
 }) {
   const pathname = usePathname();
 
-  // Cek apakah halaman saat ini merupakan bagian dari dashboard (Teams, Scoring)
+  // Cek apakah halaman saat ini merupakan bagian dari dashboard (Teams, Scoring) atau halaman login
   const isDashboardRoute =
-    pathname?.startsWith("/teams") || pathname?.startsWith("/scoring") || pathname?.startsWith("/dummyscoring");
+    pathname?.startsWith("/teams") || pathname?.startsWith("/scoring") || pathname?.startsWith("/login");
 
   if (isDashboardRoute) {
     return <>{children}</>;
