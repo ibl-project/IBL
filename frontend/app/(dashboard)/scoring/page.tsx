@@ -29,6 +29,9 @@ export default function ScoringPage() {
   const handleRemoveMatch = (id: number) => {
     const newMatches = matches.filter(m => m.id !== id);
     setMatches(newMatches);
+    if (newMatches.length === 0) {
+      setNextId(1);
+    }
     if (activeMatchId === id) {
       setActiveMatchId(newMatches.length > 0 ? newMatches[newMatches.length - 1].id : null);
     }

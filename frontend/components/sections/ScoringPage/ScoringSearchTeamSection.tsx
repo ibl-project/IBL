@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, KeyboardEvent, useRef } from "react";
+import { useTeamStore } from "@/lib/store/useTeamStore";
 
 export interface MatchInfo {
   id: number;
@@ -12,18 +13,6 @@ interface ScoringSearchTeamSectionProps {
   onSelectMatch: (id: number) => void;
   onCreate?: (team1: string, team2: string, players1: any[], players2: any[]) => void;
 }
-
-const MOCK_TEAMS = [
-  "HMD 1",
-  "HMD 2",
-  "HMD 3",
-  "HMD 4",
-  "HMD 5",
-  "HMD 6",
-  "HMD 7",
-  "HMD 8",
-  "HMD 9",
-];
 
 const generatePlayers = (teamName: string) => {
   return Array.from({ length: 15 }, (_, i) => ({
@@ -54,6 +43,8 @@ export const ScoringSearchTeamSection = ({
   onSelectMatch,
   onCreate
 }: ScoringSearchTeamSectionProps) => {
+  const teams = useTeamStore((state) => state.teams);
+
   const [t1, setT1] = useState("");
   const [t2, setT2] = useState("");
   const [search1, setSearch1] = useState("");
@@ -63,26 +54,61 @@ export const ScoringSearchTeamSection = ({
   const [players1, setPlayers1] = useState<any[]>([]);
   const [players2, setPlayers2] = useState<any[]>([]);
 
+  // Daftar nama seluruh 18 tim dari Zustand store
+  const allTeamNames = useMemo(() => teams.map((t) => t.name), [teams]);
+
   // Filtering teams based on search input
-  const filteredTeams1 = MOCK_TEAMS.filter((t) =>
+  const filteredTeams1 = allTeamNames.filter((t) =>
     t.toLowerCase().includes(search1.toLowerCase())
   );
-  const filteredTeams2 = MOCK_TEAMS.filter((t) =>
+  const filteredTeams2 = allTeamNames.filter((t) =>
     t.toLowerCase().includes(search2.toLowerCase())
   );
 
-  const handleSelectTeam1 = (team: string) => {
-    setT1(team);
-    setSearch1(team);
+  const handleSelectTeam1 = (teamName: string) => {
+    setT1(teamName);
+    setSearch1(teamName);
     setShowDropdown1(false);
-    setPlayers1(generatePlayers(team));
+
+    // Ambil data tim dari store untuk template awal nama pemain
+    const foundTeam = teams.find(
+      (t) => t.name.toLowerCase() === teamName.toLowerCase()
+    );
+    if (foundTeam && foundTeam.players && foundTeam.players.length > 0) {
+      setPlayers1(
+        foundTeam.players.map((p, i) => ({
+          id: p.id || i + 1,
+          name: p.name || `Pemain ${i + 1}`,
+          nopung: p.nopung || `${i + 1}`,
+          isCaptain: p.isCaptain ?? i === 0,
+        }))
+      );
+    } else {
+      setPlayers1(generatePlayers(teamName));
+    }
   };
 
-  const handleSelectTeam2 = (team: string) => {
-    setT2(team);
-    setSearch2(team);
+  const handleSelectTeam2 = (teamName: string) => {
+    setT2(teamName);
+    setSearch2(teamName);
     setShowDropdown2(false);
-    setPlayers2(generatePlayers(team));
+
+    // Ambil data tim dari store untuk template awal nama pemain
+    const foundTeam = teams.find(
+      (t) => t.name.toLowerCase() === teamName.toLowerCase()
+    );
+    if (foundTeam && foundTeam.players && foundTeam.players.length > 0) {
+      setPlayers2(
+        foundTeam.players.map((p, i) => ({
+          id: p.id || i + 1,
+          name: p.name || `Pemain ${i + 1}`,
+          nopung: p.nopung || `${i + 1}`,
+          isCaptain: p.isCaptain ?? i === 0,
+        }))
+      );
+    } else {
+      setPlayers2(generatePlayers(teamName));
+    }
   };
 
   const handleKeyDown1 = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -171,7 +197,7 @@ export const ScoringSearchTeamSection = ({
       {/* Tabs */}
       <div className="bg-white flex items-center justify-between px-6 py-4 rounded-[12px] mb-8 overflow-x-auto shadow-sm">
         <div className="flex items-center gap-2">
-          {matches.map((match) => (
+          {matches.map((match, index) => (
             <div
               key={match.id}
               onClick={() => onSelectMatch(match.id)}
@@ -186,7 +212,7 @@ export const ScoringSearchTeamSection = ({
                   activeMatchId === match.id ? "text-black" : "text-gray-600"
                 }`}
               >
-                Match {match.id}
+                Match {index + 1}
               </span>
               <button
                 onClick={(e) => {

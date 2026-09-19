@@ -72,7 +72,7 @@ const CounterPill = ({
 }) => {
   return (
     <div
-      className={`h-[24px] w-[50px] max-w-[50px] mx-auto px-1 rounded-[4px] flex items-center justify-between select-none box-border border ${
+      className={`h-[24px] w-full max-w-[48px] min-w-0 mx-auto px-0.5 rounded-[4px] flex items-center justify-between select-none box-border border ${
         variant === "green"
           ? "bg-[#c8e6c9] border-[#a5d6a7]"
           : "bg-[#ffcdd2] border-[#ef9a9a]"
@@ -81,7 +81,7 @@ const CounterPill = ({
       <button
         type="button"
         onClick={onDecrement}
-        className="w-3.5 h-3.5 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform cursor-pointer shrink-0"
+        className="w-3 h-3 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform cursor-pointer shrink-0"
         title="Kurang"
       >
         <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-[#b71c1c]">
@@ -89,14 +89,14 @@ const CounterPill = ({
         </svg>
       </button>
 
-      <span className="text-[12px] font-black text-black font-mono leading-none tracking-tight">
+      <span className="text-[11px] font-black text-black font-mono leading-none tracking-tight">
         {String(value).padStart(2, "0")}
       </span>
 
       <button
         type="button"
         onClick={onIncrement}
-        className="w-3.5 h-3.5 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform cursor-pointer shrink-0"
+        className="w-3 h-3 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform cursor-pointer shrink-0"
         title="Tambah"
       >
         <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-[#1b5e20]">
@@ -227,6 +227,16 @@ export const ScoringBoxScoreSection = ({
     try {
       setIsExporting(true);
       const el = exportRef.current;
+
+      // Temporarily enforce full unconstrained width during export so nothing wraps or shrinks
+      const originalWidth = el.style.width;
+      const originalMinWidth = el.style.minWidth;
+      el.style.width = "max-content";
+      el.style.minWidth = "1280px";
+
+      // Force layout recalculation
+      void el.offsetHeight;
+
       const dataUrl = await toPng(el, {
         quality: 1,
         pixelRatio: 2,
@@ -235,6 +245,11 @@ export const ScoringBoxScoreSection = ({
         width: el.scrollWidth,
         height: el.scrollHeight,
       });
+
+      // Restore original inline styles
+      el.style.width = originalWidth;
+      el.style.minWidth = originalMinWidth;
+
       const link = document.createElement("a");
       link.download = `IBL_2K26_Table_${team1}_vs_${team2}.png`;
       link.href = dataUrl;
@@ -253,6 +268,16 @@ export const ScoringBoxScoreSection = ({
     try {
       setIsExporting(true);
       const el = exportRef.current;
+
+      // Temporarily enforce full unconstrained width during export so nothing wraps or shrinks
+      const originalWidth = el.style.width;
+      const originalMinWidth = el.style.minWidth;
+      el.style.width = "max-content";
+      el.style.minWidth = "1280px";
+
+      // Force layout recalculation
+      void el.offsetHeight;
+
       const dataUrl = await toPng(el, {
         quality: 1,
         pixelRatio: 2,
@@ -261,6 +286,10 @@ export const ScoringBoxScoreSection = ({
         width: el.scrollWidth,
         height: el.scrollHeight,
       });
+
+      // Restore original inline styles
+      el.style.width = originalWidth;
+      el.style.minWidth = originalMinWidth;
 
       const img = new Image();
       img.src = dataUrl;
@@ -292,7 +321,7 @@ export const ScoringBoxScoreSection = ({
       const xPos = (pageWidth - renderWidth) / 2;
       const yPos = (pageHeight - renderHeight) / 2;
 
-      pdf.addImage(dataUrl, "PNG", xPos, yPos, renderWidth, renderHeight);
+      pdf.addImage(dataUrl, "PNG", xPos, yPos, renderWidth, renderHeight, undefined, "FAST");
       pdf.save(`IBL_2K26_Table_${team1}_vs_${team2}.pdf`);
     } catch (err) {
       console.error("Export PDF failed:", err);
@@ -367,26 +396,26 @@ export const ScoringBoxScoreSection = ({
       <div className="w-full flex flex-col">
         <table className="w-full border-collapse border border-black bg-white text-black font-poppins text-[11px] table-fixed">
           <colgroup>
-            <col className="w-[116px]" />
-            <col className="w-[32px]" />
-            <col className="w-[38px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
-            <col className="w-[64px]" />
+            <col className="w-[13%]" />
+            <col className="w-[5%]" />
+            <col className="w-[6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
+            <col className="w-[7.6%]" />
           </colgroup>
           <thead style={{ backgroundColor: headerBg, color: headerText }}>
             {/* Team Title Row */}
             <tr style={{ backgroundColor: headerBg, color: headerText }}>
               <th
                 colSpan={13}
-                className="border border-black py-2 px-3 text-center font-black text-[15px] uppercase tracking-wider font-poppins"
+                className="border border-black py-2 px-3 text-center font-black text-[15px] uppercase tracking-wider font-poppins whitespace-nowrap"
                 style={{ color: headerText, backgroundColor: headerBg }}
               >
                 {currentTeam}
@@ -466,7 +495,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* 2 Point Made */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.twoPointMade}
                       variant="green"
@@ -476,7 +505,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* 2 Point Miss */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.twoPointMiss}
                       variant="red"
@@ -486,7 +515,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* 3 Point Made */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.threePointMade}
                       variant="green"
@@ -496,7 +525,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* 3 Point Miss */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.threePointMiss}
                       variant="red"
@@ -506,7 +535,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* Assist */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.assist}
                       variant="green"
@@ -516,7 +545,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* Freethrow Made */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.freethrowMade}
                       variant="green"
@@ -526,7 +555,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* Freethrow Miss */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.freethrowMiss}
                       variant="red"
@@ -536,7 +565,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* Rebound Off */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.reboundOff}
                       variant="green"
@@ -546,7 +575,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* Rebound Def */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.reboundDef}
                       variant="green"
@@ -556,7 +585,7 @@ export const ScoringBoxScoreSection = ({
                   </td>
 
                   {/* Foul */}
-                  <td className="border border-black p-1 text-center align-middle overflow-hidden">
+                  <td className="border border-black px-0.5 py-1 text-center align-middle overflow-hidden">
                     <CounterPill
                       value={pStats.foul}
                       variant="red"
@@ -599,7 +628,7 @@ export const ScoringBoxScoreSection = ({
       {/* Tabs */}
       <div className="bg-white flex items-center justify-between px-6 py-4 rounded-[12px] mb-8 overflow-x-auto shadow-sm">
         <div className="flex items-center gap-2">
-          {matches.map((match) => (
+          {matches.map((match, index) => (
             <div
               key={match.id}
               onClick={() => onSelectMatch(match.id)}
@@ -614,7 +643,7 @@ export const ScoringBoxScoreSection = ({
                   activeMatchId === match.id ? "text-black" : "text-gray-600"
                 }`}
               >
-                Match {match.id}
+                Match {index + 1}
               </span>
               <button
                 onClick={(e) => {
@@ -702,14 +731,14 @@ export const ScoringBoxScoreSection = ({
                 </div>
 
                 <h2
-                  className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight"
+                  className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
                   style={{ color: color1 === "#ffffff" ? "#1c1b1f" : color1 }}
                 >
                   {team1}
                 </h2>
 
                 <div
-                  className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md"
+                  className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
                   style={{
                     backgroundColor: color1 === "#ffffff" ? "#afb3b6" : color1,
                     color: color1 === "#ffffff" ? "#1c1b1f" : "#ffffff",
@@ -720,14 +749,14 @@ export const ScoringBoxScoreSection = ({
               </div>
 
               {/* Central VS */}
-              <div className="text-[32px] lg:text-[40px] font-black text-[#8b0000] font-poppins leading-none select-none my-2">
+              <div className="text-[32px] lg:text-[40px] font-black text-[#8b0000] font-poppins leading-none select-none my-2 whitespace-nowrap">
                 VS
               </div>
 
               {/* Team 2 Header with Custom Color Picker */}
               <div className="flex items-center gap-3 relative">
                 <div
-                  className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md"
+                  className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
                   style={{
                     backgroundColor: color2 === "#ffffff" ? "#afb3b6" : color2,
                     color: color2 === "#ffffff" ? "#1c1b1f" : "#ffffff",
@@ -737,7 +766,7 @@ export const ScoringBoxScoreSection = ({
                 </div>
 
                 <h2
-                  className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight"
+                  className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
                   style={{ color: color2 === "#ffffff" ? "#1c1b1f" : color2 }}
                 >
                   {team2}
@@ -805,32 +834,32 @@ export const ScoringBoxScoreSection = ({
                 <div className="w-full flex flex-row items-center justify-between px-3 pb-3 border-b-2 border-black">
                   <div className="flex items-center gap-3">
                     <h3
-                      className="font-black text-[22px] font-poppins uppercase tracking-wide"
+                      className="font-black text-[22px] font-poppins uppercase tracking-wide whitespace-nowrap"
                       style={{ color: color1 === "#ffffff" ? "#1c1b1f" : color1 }}
                     >
                       {team1}
                     </h3>
                     <span
-                      className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white"
+                      className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white whitespace-nowrap shrink-0"
                       style={{ backgroundColor: color1 === "#ffffff" ? "#202224" : color1 }}
                     >
                       {team1Score} PTS
                     </span>
                   </div>
 
-                  <span className="font-black text-[18px] text-[#8b0000] font-poppins">
+                  <span className="font-black text-[18px] text-[#8b0000] font-poppins whitespace-nowrap shrink-0 mx-4">
                     VS
                   </span>
 
                   <div className="flex items-center gap-3">
                     <span
-                      className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white"
+                      className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white whitespace-nowrap shrink-0"
                       style={{ backgroundColor: color2 === "#ffffff" ? "#202224" : color2 }}
                     >
                       {team2Score} PTS
                     </span>
                     <h3
-                      className="font-black text-[22px] font-poppins uppercase tracking-wide"
+                      className="font-black text-[22px] font-poppins uppercase tracking-wide whitespace-nowrap"
                       style={{ color: color2 === "#ffffff" ? "#1c1b1f" : color2 }}
                     >
                       {team2}
@@ -839,14 +868,14 @@ export const ScoringBoxScoreSection = ({
                 </div>
 
                 {/* Side-by-Side Dual Tables */}
-                <div className="flex flex-row items-start gap-7">
+                <div className="flex flex-row items-start gap-4">
                   {/* Table Team 1 */}
-                  <div className="w-[826px] shrink-0">
+                  <div className="flex-1 min-w-[600px]">
                     {renderScoringTable(1, team1, players1List, color1)}
                   </div>
 
                   {/* Table Team 2 */}
-                  <div className="w-[826px] shrink-0">
+                  <div className="flex-1 min-w-[600px]">
                     {renderScoringTable(2, team2, players2List, color2)}
                   </div>
                 </div>
