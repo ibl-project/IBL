@@ -1,47 +1,10 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-Thumbs.db
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (allow shared .env but ignore local overrides)
-.env*.local
-.env.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
 # Documents and briefing files
 All Divisi Pemberkasan.xlsx
 Tupoksi Divisi IBL2K26.docx
+
+# IDE and other system configs
+.vscode/
+.DS_Store
+Thumbs.db
+node_modules/
+.next/
