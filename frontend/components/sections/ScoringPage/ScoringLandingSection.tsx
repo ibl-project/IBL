@@ -13,9 +13,14 @@ import React from "react";
 export const ScoringLandingSection = ({ onAddScoring }: { onAddScoring?: () => void }) => {
   return (
     <div className="flex flex-col w-full h-full pt-6">
-      <h1 className="text-[32px] font-bold text-[#202224] font-poppins tracking-[-0.11px] mb-6">
-        Scoring
-      </h1>
+      <div className="mb-6">
+        <h1 className="text-[32px] font-bold text-[#202224] font-poppins tracking-[-0.11px]">
+          Scoring
+        </h1>
+        <p className="text-sm text-gray-500 font-poppins mt-1">
+          Total 0 Pertandingan Terdaftar dalam IBL 2K26
+        </p>
+      </div>
 
       <div className="bg-white flex items-center justify-between px-[44px] py-[18px] rounded-[12px] mb-8">
         <div className="h-[28px] w-[91px]"></div>

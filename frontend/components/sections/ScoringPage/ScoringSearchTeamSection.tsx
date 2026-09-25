@@ -221,9 +221,14 @@ export const ScoringSearchTeamSection = ({
 
   return (
     <div className="flex flex-col w-full h-full pt-6 font-poppins">
-      <h1 className="text-[32px] font-bold text-[#202224] tracking-tight mb-6">
-        Scoring
-      </h1>
+      <div className="mb-6">
+        <h1 className="text-[32px] font-bold text-[#202224] tracking-tight">
+          Scoring
+        </h1>
+        <p className="text-sm text-gray-500 font-poppins mt-1">
+          Total {matches.length} Pertandingan Terdaftar dalam IBL 2K26
+        </p>
+      </div>
 
       {/* Tabs */}
       <div className="bg-white flex items-center justify-between px-6 py-4 rounded-[12px] mb-8 overflow-x-auto shadow-sm">

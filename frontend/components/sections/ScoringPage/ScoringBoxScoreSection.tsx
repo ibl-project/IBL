@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { MatchInfo } from "./ScoringSearchTeamSection";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
+import { useMatchStore } from "@/lib/store/useMatchStore";
 
 interface ScoringBoxScoreSectionProps {
   matches: MatchInfo[];
@@ -132,6 +134,12 @@ export const ScoringBoxScoreSection = ({
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | "png" | null>(null);
 
+  const updateMatchStats = useMatchStore((s) => s.updateMatchStats);
+  const updateMatchColors = useMatchStore((s) => s.updateMatchColors);
+  const currentMatch = useMatchStore((s) =>
+    s.matches.find((m) => m.id === activeMatchId)
+  );
+
   // Player lists in state so names are editable
   const [players1List, setPlayers1List] = useState(players1);
   const [players2List, setPlayers2List] = useState(players2);
@@ -144,28 +152,40 @@ export const ScoringBoxScoreSection = ({
     setPlayers2List(players2);
   }, [players2]);
 
-  // Custom colors for Team 1 and Team 2 (default pure white)
-  const [color1, setColor1] = useState("#ffffff");
-  const [color2, setColor2] = useState("#ffffff");
+  // Custom colors for Team 1 and Team 2 (persisted in store)
+  const [color1, setColor1] = useState(currentMatch?.color1 || "#ffffff");
+  const [color2, setColor2] = useState(currentMatch?.color2 || "#ffffff");
   const [showColorPicker1, setShowColorPicker1] = useState(false);
   const [showColorPicker2, setShowColorPicker2] = useState(false);
 
-  // Initialize stats state for team 1 and team 2
-  const [stats1, setStats1] = useState<{ [playerId: number]: PlayerStats }>(() => {
-    const initial: { [playerId: number]: PlayerStats } = {};
-    players1.forEach((p) => {
-      initial[p.id] = initialStats();
-    });
-    return initial;
-  });
+  // Sync colors from currentMatch when activeMatchId changes
+  useEffect(() => {
+    if (currentMatch?.color1) setColor1(currentMatch.color1);
+    if (currentMatch?.color2) setColor2(currentMatch.color2);
+  }, [currentMatch?.id, currentMatch?.color1, currentMatch?.color2]);
 
-  const [stats2, setStats2] = useState<{ [playerId: number]: PlayerStats }>(() => {
-    const initial: { [playerId: number]: PlayerStats } = {};
-    players2.forEach((p) => {
-      initial[p.id] = initialStats();
-    });
-    return initial;
-  });
+  const handleColor1Change = (newColor: string) => {
+    setColor1(newColor);
+    if (activeMatchId) {
+      updateMatchColors(activeMatchId, newColor, color2);
+    }
+  };
+
+  const handleColor2Change = (newColor: string) => {
+    setColor2(newColor);
+    if (activeMatchId) {
+      updateMatchColors(activeMatchId, color1, newColor);
+    }
+  };
+
+  // Derive stats directly from store for reactive, persistent updates across tabs
+  const stats1: { [playerId: number]: PlayerStats } = useMemo(() => {
+    return (currentMatch?.stats1 as any) || {};
+  }, [currentMatch?.stats1]);
+
+  const stats2: { [playerId: number]: PlayerStats } = useMemo(() => {
+    return (currentMatch?.stats2 as any) || {};
+  }, [currentMatch?.stats2]);
 
   const updateStat = (
     teamIdx: 1 | 2,
@@ -173,30 +193,8 @@ export const ScoringBoxScoreSection = ({
     statKey: keyof PlayerStats,
     delta: number
   ) => {
-    if (teamIdx === 1) {
-      setStats1((prev) => {
-        const current = prev[playerId] || initialStats();
-        const nextVal = Math.max(0, (current[statKey] || 0) + delta);
-        return {
-          ...prev,
-          [playerId]: {
-            ...current,
-            [statKey]: nextVal,
-          },
-        };
-      });
-    } else {
-      setStats2((prev) => {
-        const current = prev[playerId] || initialStats();
-        const nextVal = Math.max(0, (current[statKey] || 0) + delta);
-        return {
-          ...prev,
-          [playerId]: {
-            ...current,
-            [statKey]: nextVal,
-          },
-        };
-      });
+    if (activeMatchId) {
+      updateMatchStats(activeMatchId, teamIdx, playerId, statKey as any, delta);
     }
   };
 
@@ -337,40 +335,229 @@ export const ScoringBoxScoreSection = ({
     }
   };
 
-  // Handle Export to CSV
+  // Handle Export to CSV & Excel (.xlsx) with clean columns and formatting
   const handleExportCSV = () => {
     if (isExporting) return;
     setExportFormat("csv");
-    const buildTeamCSV = (teamName: string, playersList: any[], s: { [id: number]: PlayerStats }) => {
-      const rows = [
-        `TEAM: ${teamName}`,
-        "Nama,NO,Total,2PT Made,2PT Miss,3PT Made,3PT Miss,Assist,FT Made,FT Miss,Rebound Off,Rebound Def,Foul",
-      ];
-      playersList.forEach((p) => {
-        const ps = s[p.id] || initialStats();
-        const total = getPlayerPoints(ps);
-        rows.push(
-          `"${p.name}",${p.nopung || "-"},${total},${ps.twoPointMade},${ps.twoPointMiss},${ps.threePointMade},${ps.threePointMiss},${ps.assist},${ps.freethrowMade},${ps.freethrowMiss},${ps.reboundOff},${ps.reboundDef},${ps.foul}`
-        );
-      });
-      return rows.join("\n");
+
+    const formatPercent = (made: number, att: number) => {
+      if (!att || att <= 0) return "0.0%";
+      return `${((made / att) * 100).toFixed(1)}%`;
     };
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      `MATCH: ${team1} vs ${team2}\nSCORE: ${team1Score} - ${team2Score}\n\n` +
-      buildTeamCSV(team1, players1List, stats1) +
-      "\n\n" +
-      buildTeamCSV(team2, players2List, stats2);
+    const buildTeamData = (
+      teamName: string,
+      teamTotalScore: number,
+      playersList: any[],
+      s: { [id: number]: PlayerStats }
+    ) => {
+      let totPts = 0;
+      let tot2PM = 0;
+      let tot2PMiss = 0;
+      let tot3PM = 0;
+      let tot3PMiss = 0;
+      let totFTM = 0;
+      let totFTMiss = 0;
+      let totAst = 0;
+      let totOreb = 0;
+      let totDreb = 0;
+      let totFoul = 0;
 
-    const encodedUri = encodeURI(csvContent);
+      const playerRows = playersList.map((p) => {
+        const ps = s[p.id] || initialStats();
+        const pts = getPlayerPoints(ps);
+        const twoPM = ps.twoPointMade || 0;
+        const twoPMiss = ps.twoPointMiss || 0;
+        const twoPA = twoPM + twoPMiss;
+        const threePM = ps.threePointMade || 0;
+        const threePMiss = ps.threePointMiss || 0;
+        const threePA = threePM + threePMiss;
+        const ftM = ps.freethrowMade || 0;
+        const ftMiss = ps.freethrowMiss || 0;
+        const ftA = ftM + ftMiss;
+        const ast = ps.assist || 0;
+        const oreb = ps.reboundOff || 0;
+        const dreb = ps.reboundDef || 0;
+        const reb = oreb + dreb;
+        const foul = ps.foul || 0;
+
+        totPts += pts;
+        tot2PM += twoPM;
+        tot2PMiss += twoPMiss;
+        tot3PM += threePM;
+        tot3PMiss += threePMiss;
+        totFTM += ftM;
+        totFTMiss += ftMiss;
+        totAst += ast;
+        totOreb += oreb;
+        totDreb += dreb;
+        totFoul += foul;
+
+        return [
+          p.nopung || "-",
+          p.name || "-",
+          pts,
+          twoPM,
+          twoPMiss,
+          twoPA,
+          formatPercent(twoPM, twoPA),
+          threePM,
+          threePMiss,
+          threePA,
+          formatPercent(threePM, threePA),
+          ftM,
+          ftMiss,
+          ftA,
+          formatPercent(ftM, ftA),
+          ast,
+          oreb,
+          dreb,
+          reb,
+          foul,
+        ];
+      });
+
+      const tot2PA = tot2PM + tot2PMiss;
+      const tot3PA = tot3PM + tot3PMiss;
+      const totFTA = totFTM + totFTMiss;
+      const totReb = totOreb + totDreb;
+
+      const totalRow = [
+        "TOTAL",
+        `${teamName} TOTAL`,
+        totPts,
+        tot2PM,
+        tot2PMiss,
+        tot2PA,
+        formatPercent(tot2PM, tot2PA),
+        tot3PM,
+        tot3PMiss,
+        tot3PA,
+        formatPercent(tot3PM, tot3PA),
+        totFTM,
+        totFTMiss,
+        totFTA,
+        formatPercent(totFTM, totFTA),
+        totAst,
+        totOreb,
+        totDreb,
+        totReb,
+        totFoul,
+      ];
+
+      return {
+        playerRows,
+        totalRow,
+      };
+    };
+
+    const team1Data = buildTeamData(team1, team1Score, players1List, stats1);
+    const team2Data = buildTeamData(team2, team2Score, players2List, stats2);
+
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const headers = [
+      "NO",
+      "NAMA PEMAIN",
+      "PTS",
+      "2PM",
+      "2PMISS",
+      "2PA",
+      "2P%",
+      "3PM",
+      "3PMISS",
+      "3PA",
+      "3P%",
+      "FTM",
+      "FTMISS",
+      "FTA",
+      "FT%",
+      "AST",
+      "OREB",
+      "DREB",
+      "REB",
+      "FOUL",
+    ];
+
+    // 1. Generate real Excel (.xlsx) file with separate columns and custom column widths
+    const aoaData: any[][] = [
+      ["IBL 2K26 - OFFICIAL BASKETBALL BOX SCORE REPORT"],
+      ["Match", `${team1} vs ${team2}`],
+      ["Final Score", `${team1} (${team1Score}) - (${team2Score}) ${team2}`],
+      ["Tanggal & Waktu", formattedDate],
+      [],
+      [`--- TEAM: ${team1} (Total Points: ${team1Score}) ---`],
+      headers,
+      ...team1Data.playerRows,
+      team1Data.totalRow,
+      [],
+      [`--- TEAM: ${team2} (Total Points: ${team2Score}) ---`],
+      headers,
+      ...team2Data.playerRows,
+      team2Data.totalRow,
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(aoaData);
+
+    // Auto-fit column widths so text is never truncated in Excel
+    ws["!cols"] = [
+      { wch: 8 },  // NO
+      { wch: 28 }, // NAMA PEMAIN
+      { wch: 8 },  // PTS
+      { wch: 8 },  // 2PM
+      { wch: 9 },  // 2PMISS
+      { wch: 8 },  // 2PA
+      { wch: 8 },  // 2P%
+      { wch: 8 },  // 3PM
+      { wch: 9 },  // 3PMISS
+      { wch: 8 },  // 3PA
+      { wch: 8 },  // 3P%
+      { wch: 8 },  // FTM
+      { wch: 9 },  // FTMISS
+      { wch: 8 },  // FTA
+      { wch: 8 },  // FT%
+      { wch: 8 },  // AST
+      { wch: 8 },  // OREB
+      { wch: 8 },  // DREB
+      { wch: 8 },  // REB
+      { wch: 8 },  // FOUL
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Box Score");
+    XLSX.writeFile(wb, `BoxScore_${team1}_vs_${team2}.xlsx`);
+
+    // 2. Also export CSV with sep=, directive so Indonesian Windows Excel splits columns perfectly!
+    const csvRows = aoaData.map((row) =>
+      row
+        .map((cell) => {
+          const str = String(cell ?? "");
+          return str.includes(",") || str.includes('"') || str.includes("\n")
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+        })
+        .join(",")
+    );
+
+    const csvContent = "\uFEFFsep=,\r\n" + csvRows.join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.href = url;
     link.setAttribute("download", `BoxScore_${team1}_vs_${team2}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setTimeout(() => setExportFormat(null), 1000);
+    URL.revokeObjectURL(url);
+
+    setTimeout(() => setExportFormat(null), 800);
   };
 
   const renderScoringTable = (
@@ -629,9 +816,14 @@ export const ScoringBoxScoreSection = ({
 
   return (
     <div className="flex flex-col w-full h-full pt-6">
-      <h1 className="text-[32px] font-bold text-[#202224] font-poppins tracking-[-0.11px] mb-6">
-        Scoring
-      </h1>
+      <div className="mb-6">
+        <h1 className="text-[32px] font-bold text-[#202224] font-poppins tracking-[-0.11px]">
+          Scoring
+        </h1>
+        <p className="text-sm text-gray-500 font-poppins mt-1">
+          Total {matches.length} Pertandingan Terdaftar dalam IBL 2K26
+        </p>
+      </div>
 
       {/* Tabs */}
       <div className="bg-white flex items-center justify-between px-6 py-4 rounded-[12px] mb-8 overflow-x-auto shadow-sm">
@@ -652,7 +844,8 @@ export const ScoringBoxScoreSection = ({
                 Match {index + 1}
               </span>
               <button
-                onClick={(e) => {
+                type="button"
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   onRemoveMatch(match.id);
                 }}
@@ -680,18 +873,18 @@ export const ScoringBoxScoreSection = ({
       <div className="relative bg-white rounded-[12px] shadow-[6px_6px_54px_0px_rgba(0,0,0,0.05)] w-full py-8 px-4 lg:px-8 flex flex-col items-center">
 
         {/* Static Top Header (Teams & Score Banner with Color Pickers) */}
-        <div className="w-full flex flex-row items-center justify-between gap-4 mb-8 px-2">
+        <div className="w-full max-w-full flex flex-row items-center justify-between gap-2 sm:gap-4 mb-8 px-1 sm:px-2">
 
           {/* Team 1 Header with Custom Color Picker */}
-          <div className="flex items-center gap-3 relative">
-            <div className="relative flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 relative flex-1 min-w-0 justify-start">
+            <div className="relative flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowColorPicker1(!showColorPicker1)}
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 sm:gap-2 bg-gray-100 hover:bg-gray-200 px-2.5 sm:px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer shrink-0"
               >
                 <div
-                  className="w-4 h-4 rounded-full border border-black/20 shadow-inner"
+                  className="w-4 h-4 rounded-full border border-black/20 shadow-inner shrink-0"
                   style={{ backgroundColor: color1 }}
                 ></div>
                 <span className="text-[12px] font-medium text-gray-800 font-poppins">Custom</span>
@@ -700,14 +893,23 @@ export const ScoringBoxScoreSection = ({
               {/* Color Picker Dropdown 1 */}
               {showColorPicker1 && (
                 <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[220px]">
-                  <p className="text-[11px] font-bold text-gray-600 font-poppins mb-2">Pilih Warna HMD 1:</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] font-bold text-gray-700 font-poppins">Pilih Warna {team1}:</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowColorPicker1(false)}
+                      className="text-gray-400 hover:text-gray-600 text-xs cursor-pointer p-0.5"
+                    >
+                      ✕
+                    </button>
+                  </div>
                   <div className="grid grid-cols-5 gap-2 mb-3">
                     {HMD_COLOR_PRESETS.map((p, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => {
-                          setColor1(p.hex);
+                          handleColor1Change(p.hex);
                           setShowColorPicker1(false);
                         }}
                         className="w-7 h-7 rounded-full border-2 border-white shadow hover:scale-110 transition-transform cursor-pointer"
@@ -716,19 +918,19 @@ export const ScoringBoxScoreSection = ({
                       />
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 pt-2 border-t">
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                     <span className="text-[10px] text-gray-500 font-poppins">Hex:</span>
                     <input
                       type="color"
                       value={color1}
-                      onChange={(e) => setColor1(e.target.value)}
+                      onChange={(e) => handleColor1Change(e.target.value)}
                       className="w-7 h-7 rounded cursor-pointer border-0 p-0"
                     />
                     <input
                       type="text"
                       value={color1}
-                      onChange={(e) => setColor1(e.target.value)}
-                      className="w-20 text-[11px] font-mono border rounded px-1.5 py-0.5"
+                      onChange={(e) => handleColor1Change(e.target.value)}
+                      className="w-20 text-[11px] font-mono border border-gray-200 rounded px-1.5 py-0.5 uppercase"
                     />
                   </div>
                 </div>
@@ -736,14 +938,15 @@ export const ScoringBoxScoreSection = ({
             </div>
 
             <h2
-              className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-black font-poppins uppercase tracking-tight truncate min-w-0"
               style={{ color: color1 === "#ffffff" ? "#1c1b1f" : color1 }}
+              title={team1}
             >
               {team1}
             </h2>
 
             <div
-              className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
+              className="font-extrabold text-lg sm:text-xl md:text-2xl px-3 sm:px-4 lg:px-5 py-1 rounded-[10px] min-w-[45px] sm:min-w-[55px] text-center leading-tight shadow-md shrink-0"
               style={{
                 backgroundColor: color1 === "#ffffff" ? "#afb3b6" : color1,
                 color: color1 === "#ffffff" ? "#1c1b1f" : "#ffffff",
@@ -754,14 +957,14 @@ export const ScoringBoxScoreSection = ({
           </div>
 
           {/* Central VS */}
-          <div className="text-[32px] lg:text-[40px] font-black text-[#8b0000] font-poppins leading-none select-none my-2 whitespace-nowrap">
+          <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-[#8b0000] font-poppins leading-none select-none px-2 shrink-0">
             VS
           </div>
 
           {/* Team 2 Header with Custom Color Picker */}
-          <div className="flex items-center gap-3 relative">
+          <div className="flex items-center gap-2 sm:gap-3 relative flex-1 min-w-0 justify-end">
             <div
-              className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
+              className="font-extrabold text-lg sm:text-xl md:text-2xl px-3 sm:px-4 lg:px-5 py-1 rounded-[10px] min-w-[45px] sm:min-w-[55px] text-center leading-tight shadow-md shrink-0"
               style={{
                 backgroundColor: color2 === "#ffffff" ? "#afb3b6" : color2,
                 color: color2 === "#ffffff" ? "#1c1b1f" : "#ffffff",
@@ -771,17 +974,18 @@ export const ScoringBoxScoreSection = ({
             </div>
 
             <h2
-              className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-black font-poppins uppercase tracking-tight text-right truncate min-w-0"
               style={{ color: color2 === "#ffffff" ? "#1c1b1f" : color2 }}
+              title={team2}
             >
               {team2}
             </h2>
 
-            <div className="relative flex items-center gap-2">
+            <div className="relative flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowColorPicker2(!showColorPicker2)}
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 sm:gap-2 bg-gray-100 hover:bg-gray-200 px-2.5 sm:px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer shrink-0"
               >
                 <div
                   className="w-4 h-4 rounded-full border border-black/20 shadow-inner"
@@ -793,14 +997,23 @@ export const ScoringBoxScoreSection = ({
               {/* Color Picker Dropdown 2 */}
               {showColorPicker2 && (
                 <div className="absolute top-full right-0 mt-2 p-3 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[220px]">
-                  <p className="text-[11px] font-bold text-gray-600 font-poppins mb-2">Pilih Warna HMD 2:</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] font-bold text-gray-700 font-poppins">Pilih Warna {team2}:</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowColorPicker2(false)}
+                      className="text-gray-400 hover:text-gray-600 text-xs cursor-pointer p-0.5"
+                    >
+                      ✕
+                    </button>
+                  </div>
                   <div className="grid grid-cols-5 gap-2 mb-3">
                     {HMD_COLOR_PRESETS.map((p, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => {
-                          setColor2(p.hex);
+                          handleColor2Change(p.hex);
                           setShowColorPicker2(false);
                         }}
                         className="w-7 h-7 rounded-full border-2 border-white shadow hover:scale-110 transition-transform cursor-pointer"
@@ -809,19 +1022,19 @@ export const ScoringBoxScoreSection = ({
                       />
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 pt-2 border-t">
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                     <span className="text-[10px] text-gray-500 font-poppins">Hex:</span>
                     <input
                       type="color"
                       value={color2}
-                      onChange={(e) => setColor2(e.target.value)}
+                      onChange={(e) => handleColor2Change(e.target.value)}
                       className="w-7 h-7 rounded cursor-pointer border-0 p-0"
                     />
                     <input
                       type="text"
                       value={color2}
-                      onChange={(e) => setColor2(e.target.value)}
-                      className="w-20 text-[11px] font-mono border rounded px-1.5 py-0.5"
+                      onChange={(e) => handleColor2Change(e.target.value)}
+                      className="w-20 text-[11px] font-mono border border-gray-200 rounded px-1.5 py-0.5 uppercase"
                     />
                   </div>
                 </div>
@@ -887,116 +1100,89 @@ export const ScoringBoxScoreSection = ({
           </div>
         </div>
 
-        {/* Modern Executive Export Action Bar */}
-        <div className="w-full mt-8 rounded-2xl bg-gradient-to-r from-gray-50 via-white to-slate-50 border border-gray-200/90 p-5 shadow-xs">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-            {/* Header info */}
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200/80 text-teal-700 flex items-center justify-center shrink-0 shadow-xs">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        {/* Bottom Actions Row: 1 Baris Memanjang (Horizontal) */}
+        <div className="w-full mt-8 border-t pt-6 flex flex-row items-center justify-end gap-3 flex-nowrap overflow-x-auto pb-2">
+          {/* Export CSV / Excel */}
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            disabled={isExporting}
+            className="shrink-0 group relative inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white hover:bg-emerald-50 text-gray-800 hover:text-emerald-800 border border-gray-200 hover:border-emerald-300 font-poppins text-xs font-semibold shadow-xs hover:shadow-sm active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            title="Unduh data dalam format CSV & Excel"
+          >
+            <div className="w-7 h-7 rounded-full bg-emerald-100/90 text-emerald-700 flex items-center justify-center shrink-0">
+              {exportFormat === "csv" ? (
+                <svg className="w-3.5 h-3.5 animate-spin text-emerald-700" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-bold text-gray-900 tracking-tight font-poppins">
-                    Ekspor Lembar Pertandingan
-                  </h3>
-                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600 rounded-full border border-gray-200">
-                    Official Box Score
-                  </span>
-                </div>
-                <p className="text-[12px] text-gray-500 mt-0.5">
-                  Unduh rekapan hasil statistik {team1} vs {team2} ke dalam format CSV, PDF, atau gambar PNG.
-                </p>
-              </div>
+              ) : (
+                <svg className="w-4 h-4 fill-emerald-600" viewBox="0 0 24 24">
+                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                </svg>
+              )}
             </div>
-
-            {/* Export Buttons: CSV, PDF, PNG */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Export CSV */}
-              <button
-                type="button"
-                onClick={handleExportCSV}
-                disabled={isExporting}
-                className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 text-gray-800 hover:text-emerald-800 border border-gray-200 hover:border-emerald-300 font-poppins text-xs font-semibold shadow-xs hover:shadow-sm active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Unduh data dalam format CSV untuk Excel atau Google Sheets"
-              >
-                <div className="w-6 h-6 rounded-lg bg-emerald-100/90 text-emerald-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  {exportFormat === "csv" ? (
-                    <svg className="w-3.5 h-3.5 animate-spin text-emerald-700" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 24 24">
-                      <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="font-bold text-[12px] leading-tight">Export CSV</span>
-                  <span className="text-[10px] text-gray-400 group-hover:text-emerald-700 font-normal leading-none mt-0.5">.csv / Excel</span>
-                </div>
-              </button>
-
-              {/* Export PDF */}
-              <button
-                type="button"
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#d92d20] hover:bg-[#b42318] text-white font-poppins text-xs font-semibold shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Unduh dokumen box score resmi ukuran A4 Landscape siap cetak"
-              >
-                <div className="w-6 h-6 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  {exportFormat === "pdf" ? (
-                    <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
-                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V7h8v2z" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="font-bold text-[12px] leading-tight">
-                    {exportFormat === "pdf" ? "Exporting..." : "Export PDF"}
-                  </span>
-                  <span className="text-[10px] text-white/80 font-normal leading-none mt-0.5">.pdf / Print A4</span>
-                </div>
-              </button>
-
-              {/* Export PNG */}
-              <button
-                type="button"
-                onClick={handleExportPNG}
-                disabled={isExporting}
-                className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#202224] hover:bg-black text-white font-poppins text-xs font-semibold shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Unduh box score resolusi tinggi format gambar PNG"
-              >
-                <div className="w-6 h-6 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  {exportFormat === "png" ? (
-                    <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
-                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="font-bold text-[12px] leading-tight">
-                    {exportFormat === "png" ? "Exporting..." : "Export PNG"}
-                  </span>
-                  <span className="text-[10px] text-white/80 font-normal leading-none mt-0.5">.png / HD Image</span>
-                </div>
-              </button>
+            <div className="flex flex-col text-left">
+              <span className="font-bold text-[13px] leading-tight">Export CSV</span>
+              <span className="text-[10px] text-gray-400 group-hover:text-emerald-700 font-normal leading-none mt-0.5">.csv / Excel</span>
             </div>
-          </div>
+          </button>
+
+          {/* Export PDF */}
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="shrink-0 group relative inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-[#d92d20] hover:bg-[#b42318] text-white font-poppins text-xs font-semibold shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            title="Unduh dokumen box score resmi ukuran A4 Landscape siap cetak"
+          >
+            <div className="w-7 h-7 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0">
+              {exportFormat === "pdf" ? (
+                <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V7h8v2z" />
+                </svg>
+              )}
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-bold text-[13px] leading-tight">
+                {exportFormat === "pdf" ? "Exporting..." : "Export PDF"}
+              </span>
+              <span className="text-[10px] text-white/80 font-normal leading-none mt-0.5">.pdf / Print A4</span>
+            </div>
+          </button>
+
+          {/* Export PNG */}
+          <button
+            type="button"
+            onClick={handleExportPNG}
+            disabled={isExporting}
+            className="shrink-0 group relative inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-[#202224] hover:bg-black text-white font-poppins text-xs font-semibold shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            title="Unduh box score resolusi tinggi format gambar PNG"
+          >
+            <div className="w-7 h-7 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0">
+              {exportFormat === "png" ? (
+                <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z" />
+                </svg>
+              )}
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-bold text-[13px] leading-tight">
+                {exportFormat === "png" ? "Exporting..." : "Export PNG"}
+              </span>
+              <span className="text-[10px] text-white/80 font-normal leading-none mt-0.5">.png / HD Image</span>
+            </div>
+          </button>
         </div>
 
       </div>

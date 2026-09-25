@@ -1,33 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ScoringLandingSection } from "@/components/sections/ScoringPage/ScoringLandingSection";
 import { ScoringSearchTeamSection } from "@/components/sections/ScoringPage/ScoringSearchTeamSection";
 import { ScoringBoxScoreSection } from "@/components/sections/ScoringPage/ScoringBoxScoreSection";
 import { Trash2, AlertTriangle, X } from "lucide-react";
-
-type Match = {
-  id: number;
-  mode: "SEARCH" | "BOX_SCORE";
-  team1?: string;
-  team2?: string;
-  players1?: any[];
-  players2?: any[];
-};
+import { useMatchStore } from "@/lib/store/useMatchStore";
 
 export default function ScoringPage() {
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
-  const [nextId, setNextId] = useState(1);
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const {
+    matches,
+    activeMatchId,
+    addMatch,
+    removeMatch,
+    setActiveMatchId,
+    createMatch,
+  } = useMatchStore();
+
+  // Pastikan activeMatchId selalu valid jika matches ada
+  useEffect(() => {
+    if (matches.length > 0 && (!activeMatchId || !matches.some((m) => m.id === activeMatchId))) {
+      setActiveMatchId(matches[0].id);
+    }
+  }, [matches, activeMatchId, setActiveMatchId]);
 
   // State modal konfirmasi hapus match
   const [matchToDelete, setMatchToDelete] = useState<number | null>(null);
 
   const handleAddMatch = () => {
-    const newMatch: Match = { id: nextId, mode: "SEARCH" };
-    setMatches([...matches, newMatch]);
-    setActiveMatchId(nextId);
-    setNextId(nextId + 1);
+    addMatch();
   };
 
   const handleRequestRemoveMatch = (id: number) => {
@@ -36,18 +42,7 @@ export default function ScoringPage() {
 
   const handleConfirmRemoveMatch = () => {
     if (matchToDelete === null) return;
-
-    const id = matchToDelete;
-    const newMatches = matches.filter((m) => m.id !== id);
-    setMatches(newMatches);
-
-    if (newMatches.length === 0) {
-      setNextId(1);
-    }
-    if (activeMatchId === id) {
-      setActiveMatchId(newMatches.length > 0 ? newMatches[newMatches.length - 1].id : null);
-    }
-
+    removeMatch(matchToDelete);
     setMatchToDelete(null);
   };
 
@@ -57,22 +52,19 @@ export default function ScoringPage() {
     players1: any[],
     players2: any[]
   ) => {
-    setMatches(
-      matches.map((m) => {
-        if (m.id === activeMatchId) {
-          return {
-            ...m,
-            mode: "BOX_SCORE",
-            team1,
-            team2,
-            players1,
-            players2,
-          };
-        }
-        return m;
-      })
-    );
+    if (activeMatchId) {
+      createMatch(activeMatchId, team1, team2, players1, players2);
+    }
   };
+
+  // SSR hydration guard
+  if (!isMounted) {
+    return (
+      <div className="bg-[#e1e7ea] min-h-screen w-full flex items-center justify-center font-poppins">
+        <div className="w-8 h-8 border-3 border-teal-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const activeMatch = matches.find((m) => m.id === activeMatchId);
   const matchIndexToDelete =
