@@ -96,6 +96,12 @@ export const DashboardTopbar: React.FC<DashboardTopbarProps> = ({
                   type="button"
                   onClick={() => {
                     setIsProfileOpen(false);
+                    document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+                    try {
+                      localStorage.removeItem("auth_token");
+                    } catch {
+                      // Ignore
+                    }
                     router.push("/login");
                   }}
                   className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer text-left"

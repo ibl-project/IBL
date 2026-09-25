@@ -16,20 +16,17 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    /**
-     * =========================================================================
-     * TODO [BACKEND]: Integrasi Endpoint Otentikasi Login
-     * =========================================================================
-     * 1. Kirim kredensial ke API Backend:
-     *    const res = await fetch('/api/auth/login', {
-     *      method: 'POST',
-     *      headers: { 'Content-Type': 'application/json' },
-     *      body: JSON.stringify({ email, password, rememberMe }),
-     *    });
-     * 2. Simpan token/session (cookie HTTP-only atau localStorage).
-     * 3. Tangani error response jika kredensial tidak sesuai.
-     * =========================================================================
-     */
+    // Set cookie dan localStorage auth_token
+    const rememberMeInput = document.getElementById("remember_me") as HTMLInputElement | null;
+    const isRemembered = rememberMeInput?.checked ?? false;
+    const maxAgeSeconds = isRemembered ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7; // 30 hari vs 7 hari
+
+    document.cookie = `auth_token=true; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+    try {
+      localStorage.setItem("auth_token", "true");
+    } catch {
+      // Ignore if localStorage unavailable
+    }
 
     // Alihkan langsung ke halaman Teams setelah login berhasil
     router.push('/teams');

@@ -144,15 +144,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   ];
 
   const handleLogout = async () => {
-    /**
-     * =========================================================================
-     * TODO [BACKEND]: Integrasi Endpoint Logout
-     * =========================================================================
-     * 1. Panggil endpoint logout BE jika ada (e.g. POST /api/auth/logout).
-     * 2. Bersihkan token/cookie otentikasi.
-     * 3. Bersihkan cache/state user jika diperlukan.
-     * =========================================================================
-     */
+    document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+    try {
+      localStorage.removeItem("auth_token");
+    } catch {
+      // Ignore
+    }
     router.push("/login");
   };
 

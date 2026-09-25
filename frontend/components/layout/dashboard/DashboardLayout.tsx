@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardTopbar } from "./DashboardTopbar";
 
@@ -18,7 +19,24 @@ export const DashboardLayout = ({
 }: {
   children: React.ReactNode;
 }) => {
+  const router = useRouter();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Auth Guard: Verifikasi apakah user sudah login
+  useEffect(() => {
+    const hasAuthCookie = document.cookie
+      .split("; ")
+      .some((row) => row.startsWith("auth_token="));
+    const hasAuthStorage =
+      typeof window !== "undefined" && localStorage.getItem("auth_token") === "true";
+
+    if (!hasAuthCookie && !hasAuthStorage) {
+      router.replace("/login");
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
 
   // Auto-collapse pada viewport mobile saat inisialisasi
   useEffect(() => {
@@ -28,6 +46,15 @@ export const DashboardLayout = ({
       setIsSidebarCollapsed(true);
     }
   }, []);
+
+  // Tampilkan loading / kosong sesaat saat mengecek auth untuk menghindari flash of unauthorized content
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 font-poppins">
+        <div className="w-8 h-8 border-3 border-teal-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div

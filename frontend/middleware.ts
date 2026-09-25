@@ -40,24 +40,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/teams", request.url));
   }
 
-  /**
-   * =========================================================================
-   * TODO [BACKEND]: Aktifkan validasi cookie berikut saat integrasi API selesai:
-   * =========================================================================
-   * 
-   * const authToken = request.cookies.get("auth_token")?.value;
-   * const isProtectedPath = pathname.startsWith("/teams") || pathname.startsWith("/scoring");
-   * 
-   * if (isProtectedPath && !authToken) {
-   *   const loginUrl = new URL("/login", request.url);
-   *   loginUrl.searchParams.set("from", pathname);
-   *   return NextResponse.redirect(loginUrl);
-   * }
-   * 
-   * if (pathname === "/login" && authToken) {
-   *   return NextResponse.redirect(new URL("/teams", request.url));
-   * }
-   */
+  // 2. Proteksi rute dashboard (/teams, /scoring)
+  const authToken = request.cookies.get("auth_token")?.value;
+  const isProtectedPath = pathname.startsWith("/teams") || pathname.startsWith("/scoring");
+
+  if (isProtectedPath && !authToken) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("from", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 3. Jika sudah login dan membuka /login, alihkan ke /teams
+  if (pathname === "/login" && authToken) {
+    return NextResponse.redirect(new URL("/teams", request.url));
+  }
 
   return NextResponse.next();
 }
