@@ -65,6 +65,27 @@ interface TeamState {
   updateTeam: (teamId: string, updatedData: Partial<Team>) => void;
   updateTeamStats: (teamId: string, stats: TeamStats) => void;
   updatePlayers: (teamId: string, players: Player[]) => void;
+  addTeam: (teamData: {
+    name: string;
+    group?: string;
+    logo?: string;
+    players?: { name: string; nopung?: string; isCaptain?: boolean }[];
+  }) => Team;
+  deleteTeam: (teamId: string) => void;
+  addPlayer: (
+    teamId: string,
+    player: { name: string; nopung?: string; isCaptain?: boolean }
+  ) => void;
+  deletePlayer: (teamId: string, playerId: number) => void;
+  importTeamsFromRawData: (
+    rawRows: Array<{
+      teamName: string;
+      group?: string;
+      playerName?: string;
+      nopung?: string;
+      isCaptain?: boolean;
+    }>
+  ) => void;
   getTeamById: (teamId: string) => Team | undefined;
   getTeamByName: (teamName: string) => Team | undefined;
   resetToDefault: () => void;
@@ -88,7 +109,7 @@ const DEFAULT_INDONESIAN_NAMES = [
   "Rendi Pangalila",
 ];
 
-const createDefaultStats = (): PlayerStats => ({
+export const createDefaultPlayerStats = (): PlayerStats => ({
   game: "-",
   point: "-",
   assist: "-",
@@ -102,7 +123,7 @@ const createDefaultStats = (): PlayerStats => ({
   ftPercent: "-",
 });
 
-const createDefaultTeamStats = (): TeamStats => ({
+export const createDefaultTeamStats = (): TeamStats => ({
   G: "-",
   W: "-",
   L: "-",
@@ -118,7 +139,7 @@ const createInitialPlayersForTeam = (): Player[] => {
     name,
     nopung: String(index + 1),
     isCaptain: index === 0,
-    stats: createDefaultStats(),
+    stats: createDefaultPlayerStats(),
   }));
 };
 
@@ -164,6 +185,128 @@ export const useTeamStore = create<TeamState>()(
             team.id === teamId ? { ...team, players } : team
           ),
         }));
+      },
+
+      addTeam: ({ name, group = "Group A", logo = "/images/LOGO_1.svg", players = [] }) => {
+        const currentTeams = get().teams;
+        // Generate new sequential or unique id
+        const maxId = currentTeams.reduce((max, t) => {
+          const num = parseInt(t.id, 10);
+          return !isNaN(num) && num > max ? num : max;
+        }, 0);
+        const newId = String(maxId + 1);
+
+        const initialPlayers: Player[] =
+          players.length > 0
+            ? players.map((p, idx) => ({
+                id: idx + 1,
+                name: p.name,
+                nopung: p.nopung || String(idx + 1),
+                isCaptain: p.isCaptain ?? idx === 0,
+                stats: createDefaultPlayerStats(),
+              }))
+            : createInitialPlayersForTeam();
+
+        const newTeam: Team = {
+          id: newId,
+          name,
+          group,
+          logo,
+          teamStats: createDefaultTeamStats(),
+          players: initialPlayers,
+        };
+
+        set((state) => ({
+          teams: [...state.teams, newTeam],
+        }));
+
+        return newTeam;
+      },
+
+      deleteTeam: (teamId: string) => {
+        set((state) => ({
+          teams: state.teams.filter((t) => t.id !== teamId),
+        }));
+      },
+
+      addPlayer: (teamId: string, player) => {
+        set((state) => ({
+          teams: state.teams.map((team) => {
+            if (team.id !== teamId) return team;
+            const currentPlayers = team.players || [];
+            const maxPlayerId = currentPlayers.reduce((max, p) => (p.id > max ? p.id : max), 0);
+            const newPlayer: Player = {
+              id: maxPlayerId + 1,
+              name: player.name || `Pemain ${currentPlayers.length + 1}`,
+              nopung: player.nopung || String(currentPlayers.length + 1),
+              isCaptain: player.isCaptain ?? (currentPlayers.length === 0),
+              stats: createDefaultPlayerStats(),
+            };
+            return {
+              ...team,
+              players: [...currentPlayers, newPlayer],
+            };
+          }),
+        }));
+      },
+
+      deletePlayer: (teamId: string, playerId: number) => {
+        set((state) => ({
+          teams: state.teams.map((team) => {
+            if (team.id !== teamId) return team;
+            return {
+              ...team,
+              players: team.players.filter((p) => p.id !== playerId),
+            };
+          }),
+        }));
+      },
+
+      importTeamsFromRawData: (rawRows) => {
+        // Group raw rows (e.g. from XLSX / CSV export) by teamName
+        const teamsMap = new Map<string, { group: string; players: Player[] }>();
+
+        rawRows.forEach((row) => {
+          const tName = (row.teamName || "").trim();
+          if (!tName) return;
+
+          if (!teamsMap.has(tName)) {
+            teamsMap.set(tName, {
+              group: row.group || "Group A",
+              players: [],
+            });
+          }
+
+          const teamEntry = teamsMap.get(tName)!;
+          if (row.playerName && row.playerName.trim()) {
+            const nextPId = teamEntry.players.length + 1;
+            teamEntry.players.push({
+              id: nextPId,
+              name: row.playerName.trim(),
+              nopung: row.nopung || String(nextPId),
+              isCaptain: Boolean(row.isCaptain),
+              stats: createDefaultPlayerStats(),
+            });
+          }
+        });
+
+        const newTeamsList: Team[] = [];
+        let index = 1;
+        teamsMap.forEach((data, tName) => {
+          newTeamsList.push({
+            id: String(index),
+            name: tName,
+            group: data.group,
+            logo: "/images/LOGO_1.svg",
+            teamStats: createDefaultTeamStats(),
+            players: data.players.length > 0 ? data.players : createInitialPlayersForTeam(),
+          });
+          index++;
+        });
+
+        if (newTeamsList.length > 0) {
+          set({ teams: newTeamsList });
+        }
       },
 
       getTeamById: (teamId: string) => {

@@ -130,6 +130,7 @@ export const ScoringBoxScoreSection = ({
 }: ScoringBoxScoreSectionProps) => {
   const exportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | "png" | null>(null);
 
   // Player lists in state so names are editable
   const [players1List, setPlayers1List] = useState(players1);
@@ -222,9 +223,10 @@ export const ScoringBoxScoreSection = ({
 
   // Handle Export to Image (PNG)
   const handleExportPNG = async () => {
-    if (!exportRef.current) return;
+    if (!exportRef.current || isExporting) return;
     try {
       setIsExporting(true);
+      setExportFormat("png");
       const el = exportRef.current;
 
       // Temporarily enforce full unconstrained width during export so nothing wraps or shrinks
@@ -259,14 +261,16 @@ export const ScoringBoxScoreSection = ({
       alert("Gagal melakukan export gambar PNG. Silakan coba lagi.");
     } finally {
       setIsExporting(false);
+      setExportFormat(null);
     }
   };
 
   // Handle Export to PDF
   const handleExportPDF = async () => {
-    if (!exportRef.current) return;
+    if (!exportRef.current || isExporting) return;
     try {
       setIsExporting(true);
+      setExportFormat("pdf");
       const el = exportRef.current;
 
       // Temporarily enforce full unconstrained width during export so nothing wraps or shrinks
@@ -329,11 +333,14 @@ export const ScoringBoxScoreSection = ({
       alert("Gagal melakukan export PDF. Silakan coba lagi.");
     } finally {
       setIsExporting(false);
+      setExportFormat(null);
     }
   };
 
   // Handle Export to CSV
   const handleExportCSV = () => {
+    if (isExporting) return;
+    setExportFormat("csv");
     const buildTeamCSV = (teamName: string, playersList: any[], s: { [id: number]: PlayerStats }) => {
       const rows = [
         `TEAM: ${teamName}`,
@@ -363,6 +370,7 @@ export const ScoringBoxScoreSection = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => setExportFormat(null), 1000);
   };
 
   const renderScoringTable = (
@@ -879,56 +887,115 @@ export const ScoringBoxScoreSection = ({
           </div>
         </div>
 
-        {/* Bottom Actions Row */}
-        <div className="w-full flex flex-wrap justify-between items-center gap-4 mt-8 border-t pt-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleExportCSV}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors rounded-[50px] px-5 py-2 h-[38px] flex items-center gap-2 font-poppins text-[13px] font-bold shadow-sm cursor-pointer"
-            >
-              <svg className="w-4 h-4 fill-gray-600" viewBox="0 0 24 24">
-                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-              </svg>
-              <span>Export CSV</span>
-            </button>
-          </div>
+        {/* Modern Executive Export Action Bar */}
+        <div className="w-full mt-8 rounded-2xl bg-gradient-to-r from-gray-50 via-white to-slate-50 border border-gray-200/90 p-5 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            {/* Header info */}
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200/80 text-teal-700 flex items-center justify-center shrink-0 shadow-xs">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-bold text-gray-900 tracking-tight font-poppins">
+                    Ekspor Lembar Pertandingan
+                  </h3>
+                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600 rounded-full border border-gray-200">
+                    Official Box Score
+                  </span>
+                </div>
+                <p className="text-[12px] text-gray-500 mt-0.5">
+                  Unduh rekapan hasil statistik {team1} vs {team2} ke dalam format CSV, PDF, atau gambar PNG.
+                </p>
+              </div>
+            </div>
 
-          <div className="flex items-center gap-3">
-            {/* Export PDF */}
-            <button
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              className="bg-[#d92d20] hover:bg-[#b42318] text-white transition-colors rounded-[50px] px-5 py-2 h-[38px] flex items-center gap-2 font-poppins text-[13px] font-bold shadow-md disabled:opacity-60 cursor-pointer"
-            >
-              {isExporting ? (
-                <span>Exporting...</span>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V7h8v2z" />
-                  </svg>
-                  <span>Export PDF</span>
-                </>
-              )}
-            </button>
+            {/* Export Buttons: CSV, PDF, PNG */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Export CSV */}
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                disabled={isExporting}
+                className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 text-gray-800 hover:text-emerald-800 border border-gray-200 hover:border-emerald-300 font-poppins text-xs font-semibold shadow-xs hover:shadow-sm active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Unduh data dalam format CSV untuk Excel atau Google Sheets"
+              >
+                <div className="w-6 h-6 rounded-lg bg-emerald-100/90 text-emerald-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  {exportFormat === "csv" ? (
+                    <svg className="w-3.5 h-3.5 animate-spin text-emerald-700" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 24 24">
+                      <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="font-bold text-[12px] leading-tight">Export CSV</span>
+                  <span className="text-[10px] text-gray-400 group-hover:text-emerald-700 font-normal leading-none mt-0.5">.csv / Excel</span>
+                </div>
+              </button>
 
-            {/* Export PNG */}
-            <button
-              onClick={handleExportPNG}
-              disabled={isExporting}
-              className="bg-[#202224] hover:bg-black text-white transition-colors rounded-[50px] px-5 py-2 h-[38px] flex items-center gap-2 font-poppins text-[13px] font-bold shadow-md disabled:opacity-60 cursor-pointer"
-            >
-              {isExporting ? (
-                <span>Exporting...</span>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z" />
-                  </svg>
-                  <span>Export PNG</span>
-                </>
-              )}
-            </button>
+              {/* Export PDF */}
+              <button
+                type="button"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#d92d20] hover:bg-[#b42318] text-white font-poppins text-xs font-semibold shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Unduh dokumen box score resmi ukuran A4 Landscape siap cetak"
+              >
+                <div className="w-6 h-6 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  {exportFormat === "pdf" ? (
+                    <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V7h8v2z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="font-bold text-[12px] leading-tight">
+                    {exportFormat === "pdf" ? "Exporting..." : "Export PDF"}
+                  </span>
+                  <span className="text-[10px] text-white/80 font-normal leading-none mt-0.5">.pdf / Print A4</span>
+                </div>
+              </button>
+
+              {/* Export PNG */}
+              <button
+                type="button"
+                onClick={handleExportPNG}
+                disabled={isExporting}
+                className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#202224] hover:bg-black text-white font-poppins text-xs font-semibold shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Unduh box score resolusi tinggi format gambar PNG"
+              >
+                <div className="w-6 h-6 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  {exportFormat === "png" ? (
+                    <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="font-bold text-[12px] leading-tight">
+                    {exportFormat === "png" ? "Exporting..." : "Export PNG"}
+                  </span>
+                  <span className="text-[10px] text-white/80 font-normal leading-none mt-0.5">.png / HD Image</span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
 

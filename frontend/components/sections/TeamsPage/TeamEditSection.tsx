@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { useTeamStore, TeamStats, PlayerStats, Player } from "@/lib/store/useTeamStore";
+import { Plus, Trash2 } from "lucide-react";
+import {
+  useTeamStore,
+  TeamStats,
+  PlayerStats,
+  Player,
+  createDefaultPlayerStats,
+} from "@/lib/store/useTeamStore";
 
 interface TeamEditSectionProps {
   teamId?: string;
@@ -152,6 +159,26 @@ export const TeamEditSection = ({
     }));
   };
 
+  const handleAddPlayer = () => {
+    const maxId = players.reduce((max, p) => (p.id > max ? p.id : max), 0);
+    const newPlayer: Player = {
+      id: maxId + 1,
+      name: `Pemain ${players.length + 1}`,
+      nopung: String(players.length + 1),
+      isCaptain: players.length === 0,
+      stats: createDefaultPlayerStats(),
+    };
+    setPlayers((prev) => [...prev, newPlayer]);
+  };
+
+  const handleDeletePlayer = (idx: number) => {
+    if (players.length <= 1) {
+      alert("Tim harus memiliki minimal 1 pemain.");
+      return;
+    }
+    setPlayers((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSave = () => {
     const targetId = currentTeam?.id || teamId || "1";
 
@@ -265,9 +292,19 @@ export const TeamEditSection = ({
 
         {/* 2. Player Total Statistic Table */}
         <div className="mb-10">
-          <h3 className="text-base font-extrabold text-[#2d3748] mb-3">
-            Player Total Statistic
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-extrabold text-[#2d3748]">
+              Player Total Statistic ({players.length} Pemain)
+            </h3>
+            <button
+              type="button"
+              onClick={handleAddPlayer}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E88E5] hover:bg-[#1565C0] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Tambah Pemain</span>
+            </button>
+          </div>
           <div className="overflow-x-auto rounded-lg border border-black">
             <table className="w-full text-center text-sm border-collapse">
               <thead className="bg-[#D9CDBF] font-bold text-[#2d3748]">
@@ -276,7 +313,8 @@ export const TeamEditSection = ({
                   <th className="p-3 border-b border-r border-white/50">GAME</th>
                   <th className="p-3 border-b border-r border-white/50">POINT</th>
                   <th className="p-3 border-b border-r border-white/50">ASSIST</th>
-                  <th className="p-3 border-b">REBOUND</th>
+                  <th className="p-3 border-b border-r border-white/50">REBOUND</th>
+                  <th className="p-3 border-b w-[50px]">HAPUS</th>
                 </tr>
               </thead>
               <tbody>
@@ -317,13 +355,23 @@ export const TeamEditSection = ({
                         }
                       />
                     </td>
-                    <td className="p-1">
+                    <td className="p-1 border-r border-gray-200">
                       <StatInput
                         value={player.stats?.rebound || "-"}
                         onChange={(v) =>
                           handlePlayerStatChange(idx, "rebound", v)
                         }
                       />
+                    </td>
+                    <td className="p-1 text-center align-middle">
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePlayer(idx)}
+                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                        title="Hapus pemain"
+                      >
+                        <Trash2 className="w-4 h-4 mx-auto" />
+                      </button>
                     </td>
                   </tr>
                 ))}
