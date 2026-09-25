@@ -2,7 +2,7 @@
   "editor.quickSuggestions": {
     "strings": "on"
   },
-  "tailwindCSS.experimental.configFile": "./frontend/app/globals.css",
+  "tailwindCSS.experimental.configFile": "./app/globals.css",
   "tailwindCSS.includeLanguages": {
     "typescript": "javascript",
     "typescriptreact": "javascript"

@@ -72,11 +72,10 @@ const CounterPill = ({
 }) => {
   return (
     <div
-      className={`h-[24px] w-full max-w-[48px] min-w-0 mx-auto px-0.5 rounded-[4px] flex items-center justify-between select-none box-border border ${
-        variant === "green"
-          ? "bg-[#c8e6c9] border-[#a5d6a7]"
-          : "bg-[#ffcdd2] border-[#ef9a9a]"
-      }`}
+      className={`h-[24px] w-full max-w-[48px] min-w-0 mx-auto px-0.5 rounded-[4px] flex items-center justify-between select-none box-border border ${variant === "green"
+        ? "bg-[#c8e6c9] border-[#a5d6a7]"
+        : "bg-[#ffcdd2] border-[#ef9a9a]"
+        }`}
     >
       <button
         type="button"
@@ -231,7 +230,8 @@ export const ScoringBoxScoreSection = ({
       // Temporarily enforce full unconstrained width during export so nothing wraps or shrinks
       const originalWidth = el.style.width;
       const originalMinWidth = el.style.minWidth;
-      el.style.width = "max-content";
+      // Use a definite width: max-content makes the percentage-column tables expand to ~1,000,000px
+      el.style.width = "1280px";
       el.style.minWidth = "1280px";
 
       // Force layout recalculation
@@ -272,7 +272,8 @@ export const ScoringBoxScoreSection = ({
       // Temporarily enforce full unconstrained width during export so nothing wraps or shrinks
       const originalWidth = el.style.width;
       const originalMinWidth = el.style.minWidth;
-      el.style.width = "max-content";
+      // Use a definite width: max-content makes the percentage-column tables expand to ~1,000,000px
+      el.style.width = "1280px";
       el.style.minWidth = "1280px";
 
       // Force layout recalculation
@@ -475,9 +476,8 @@ export const ScoringBoxScoreSection = ({
               return (
                 <tr
                   key={p.id}
-                  className={`transition-colors ${
-                    isEvenRow ? "bg-[#e8ecef]" : "bg-white"
-                  } hover:brightness-95`}
+                  className={`transition-colors ${isEvenRow ? "bg-[#e8ecef]" : "bg-white"
+                    } hover:brightness-95`}
                 >
                   {/* Nama (Static Text) */}
                   <td className="border border-black px-2 py-1 text-[11px] font-semibold text-gray-900 truncate" title={p.name}>
@@ -632,16 +632,14 @@ export const ScoringBoxScoreSection = ({
             <div
               key={match.id}
               onClick={() => onSelectMatch(match.id)}
-              className={`flex items-center h-[36px] px-4 rounded-full cursor-pointer transition-colors border ${
-                activeMatchId === match.id
-                  ? "bg-[#e2e8f0] border-transparent"
-                  : "bg-white border-gray-300 hover:bg-gray-50"
-              }`}
+              className={`flex items-center h-[36px] px-4 rounded-full cursor-pointer transition-colors border ${activeMatchId === match.id
+                ? "bg-[#e2e8f0] border-transparent"
+                : "bg-white border-gray-300 hover:bg-gray-50"
+                }`}
             >
               <span
-                className={`font-semibold text-[12px] font-poppins ${
-                  activeMatchId === match.id ? "text-black" : "text-gray-600"
-                }`}
+                className={`font-semibold text-[12px] font-poppins ${activeMatchId === match.id ? "text-black" : "text-gray-600"
+                  }`}
               >
                 Match {index + 1}
               </span>
@@ -650,11 +648,10 @@ export const ScoringBoxScoreSection = ({
                   e.stopPropagation();
                   onRemoveMatch(match.id);
                 }}
-                className={`flex items-center justify-center ml-2 ${
-                  activeMatchId === match.id
-                    ? "text-black hover:text-gray-700"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`flex items-center justify-center ml-2 ${activeMatchId === match.id
+                  ? "text-black hover:text-gray-700"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 ✕
               </button>
@@ -673,214 +670,214 @@ export const ScoringBoxScoreSection = ({
 
       {/* Main Box Score Card */}
       <div className="relative bg-white rounded-[12px] shadow-[6px_6px_54px_0px_rgba(0,0,0,0.05)] w-full py-8 px-4 lg:px-8 flex flex-col items-center">
-        
+
         {/* Static Top Header (Teams & Score Banner with Color Pickers) */}
         <div className="w-full flex flex-row items-center justify-between gap-4 mb-8 px-2">
-              
-              {/* Team 1 Header with Custom Color Picker */}
-              <div className="flex items-center gap-3 relative">
-                <div className="relative flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowColorPicker1(!showColorPicker1)}
-                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer"
-                  >
-                    <div
-                      className="w-4 h-4 rounded-full border border-black/20 shadow-inner"
-                      style={{ backgroundColor: color1 }}
-                    ></div>
-                    <span className="text-[12px] font-medium text-gray-800 font-poppins">Custom</span>
-                  </button>
 
-                  {/* Color Picker Dropdown 1 */}
-                  {showColorPicker1 && (
-                    <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[220px]">
-                      <p className="text-[11px] font-bold text-gray-600 font-poppins mb-2">Pilih Warna HMD 1:</p>
-                      <div className="grid grid-cols-5 gap-2 mb-3">
-                        {HMD_COLOR_PRESETS.map((p, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setColor1(p.hex);
-                              setShowColorPicker1(false);
-                            }}
-                            className="w-7 h-7 rounded-full border-2 border-white shadow hover:scale-110 transition-transform cursor-pointer"
-                            style={{ backgroundColor: p.hex }}
-                            title={p.name}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2 pt-2 border-t">
-                        <span className="text-[10px] text-gray-500 font-poppins">Hex:</span>
-                        <input
-                          type="color"
-                          value={color1}
-                          onChange={(e) => setColor1(e.target.value)}
-                          className="w-7 h-7 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={color1}
-                          onChange={(e) => setColor1(e.target.value)}
-                          className="w-20 text-[11px] font-mono border rounded px-1.5 py-0.5"
-                        />
-                      </div>
-                    </div>
-                  )}
+          {/* Team 1 Header with Custom Color Picker */}
+          <div className="flex items-center gap-3 relative">
+            <div className="relative flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowColorPicker1(!showColorPicker1)}
+                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer"
+              >
+                <div
+                  className="w-4 h-4 rounded-full border border-black/20 shadow-inner"
+                  style={{ backgroundColor: color1 }}
+                ></div>
+                <span className="text-[12px] font-medium text-gray-800 font-poppins">Custom</span>
+              </button>
+
+              {/* Color Picker Dropdown 1 */}
+              {showColorPicker1 && (
+                <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[220px]">
+                  <p className="text-[11px] font-bold text-gray-600 font-poppins mb-2">Pilih Warna HMD 1:</p>
+                  <div className="grid grid-cols-5 gap-2 mb-3">
+                    {HMD_COLOR_PRESETS.map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setColor1(p.hex);
+                          setShowColorPicker1(false);
+                        }}
+                        className="w-7 h-7 rounded-full border-2 border-white shadow hover:scale-110 transition-transform cursor-pointer"
+                        style={{ backgroundColor: p.hex }}
+                        title={p.name}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <span className="text-[10px] text-gray-500 font-poppins">Hex:</span>
+                    <input
+                      type="color"
+                      value={color1}
+                      onChange={(e) => setColor1(e.target.value)}
+                      className="w-7 h-7 rounded cursor-pointer border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={color1}
+                      onChange={(e) => setColor1(e.target.value)}
+                      className="w-20 text-[11px] font-mono border rounded px-1.5 py-0.5"
+                    />
+                  </div>
                 </div>
+              )}
+            </div>
 
-                <h2
-                  className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
+            <h2
+              className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
+              style={{ color: color1 === "#ffffff" ? "#1c1b1f" : color1 }}
+            >
+              {team1}
+            </h2>
+
+            <div
+              className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
+              style={{
+                backgroundColor: color1 === "#ffffff" ? "#afb3b6" : color1,
+                color: color1 === "#ffffff" ? "#1c1b1f" : "#ffffff",
+              }}
+            >
+              {team1Score}
+            </div>
+          </div>
+
+          {/* Central VS */}
+          <div className="text-[32px] lg:text-[40px] font-black text-[#8b0000] font-poppins leading-none select-none my-2 whitespace-nowrap">
+            VS
+          </div>
+
+          {/* Team 2 Header with Custom Color Picker */}
+          <div className="flex items-center gap-3 relative">
+            <div
+              className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
+              style={{
+                backgroundColor: color2 === "#ffffff" ? "#afb3b6" : color2,
+                color: color2 === "#ffffff" ? "#1c1b1f" : "#ffffff",
+              }}
+            >
+              {team2Score}
+            </div>
+
+            <h2
+              className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
+              style={{ color: color2 === "#ffffff" ? "#1c1b1f" : color2 }}
+            >
+              {team2}
+            </h2>
+
+            <div className="relative flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowColorPicker2(!showColorPicker2)}
+                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer"
+              >
+                <div
+                  className="w-4 h-4 rounded-full border border-black/20 shadow-inner"
+                  style={{ backgroundColor: color2 }}
+                ></div>
+                <span className="text-[12px] font-medium text-gray-800 font-poppins">Custom</span>
+              </button>
+
+              {/* Color Picker Dropdown 2 */}
+              {showColorPicker2 && (
+                <div className="absolute top-full right-0 mt-2 p-3 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[220px]">
+                  <p className="text-[11px] font-bold text-gray-600 font-poppins mb-2">Pilih Warna HMD 2:</p>
+                  <div className="grid grid-cols-5 gap-2 mb-3">
+                    {HMD_COLOR_PRESETS.map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setColor2(p.hex);
+                          setShowColorPicker2(false);
+                        }}
+                        className="w-7 h-7 rounded-full border-2 border-white shadow hover:scale-110 transition-transform cursor-pointer"
+                        style={{ backgroundColor: p.hex }}
+                        title={p.name}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <span className="text-[10px] text-gray-500 font-poppins">Hex:</span>
+                    <input
+                      type="color"
+                      value={color2}
+                      onChange={(e) => setColor2(e.target.value)}
+                      className="w-7 h-7 rounded cursor-pointer border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={color2}
+                      onChange={(e) => setColor2(e.target.value)}
+                      className="w-20 text-[11px] font-mono border rounded px-1.5 py-0.5"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Scrollable Container on Screen */}
+        <div className="w-full overflow-x-auto pb-4">
+          {/* Target for PDF & PNG Export (Full Unclipped Width) */}
+          <div ref={exportRef} className="w-full min-w-[1280px] flex flex-col gap-4 bg-white p-5 rounded-xl">
+            {/* Match Header with Playing HMD Teams */}
+            <div className="w-full flex flex-row items-center justify-between px-3 pb-3 border-b-2 border-black">
+              <div className="flex items-center gap-3">
+                <h3
+                  className="font-black text-[22px] font-poppins uppercase tracking-wide whitespace-nowrap"
                   style={{ color: color1 === "#ffffff" ? "#1c1b1f" : color1 }}
                 >
                   {team1}
-                </h2>
-
-                <div
-                  className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
-                  style={{
-                    backgroundColor: color1 === "#ffffff" ? "#afb3b6" : color1,
-                    color: color1 === "#ffffff" ? "#1c1b1f" : "#ffffff",
-                  }}
+                </h3>
+                <span
+                  className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white whitespace-nowrap shrink-0"
+                  style={{ backgroundColor: color1 === "#ffffff" ? "#202224" : color1 }}
                 >
-                  {team1Score}
-                </div>
+                  {team1Score} PTS
+                </span>
               </div>
 
-              {/* Central VS */}
-              <div className="text-[32px] lg:text-[40px] font-black text-[#8b0000] font-poppins leading-none select-none my-2 whitespace-nowrap">
+              <span className="font-black text-[18px] text-[#8b0000] font-poppins whitespace-nowrap shrink-0 mx-4">
                 VS
-              </div>
+              </span>
 
-              {/* Team 2 Header with Custom Color Picker */}
-              <div className="flex items-center gap-3 relative">
-                <div
-                  className="font-extrabold text-[24px] lg:text-[28px] px-5 py-1 rounded-[10px] min-w-[65px] text-center leading-tight shadow-md whitespace-nowrap"
-                  style={{
-                    backgroundColor: color2 === "#ffffff" ? "#afb3b6" : color2,
-                    color: color2 === "#ffffff" ? "#1c1b1f" : "#ffffff",
-                  }}
+              <div className="flex items-center gap-3">
+                <span
+                  className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white whitespace-nowrap shrink-0"
+                  style={{ backgroundColor: color2 === "#ffffff" ? "#202224" : color2 }}
                 >
-                  {team2Score}
-                </div>
-
-                <h2
-                  className="text-[28px] lg:text-[36px] font-black font-poppins uppercase tracking-tight whitespace-nowrap"
+                  {team2Score} PTS
+                </span>
+                <h3
+                  className="font-black text-[22px] font-poppins uppercase tracking-wide whitespace-nowrap"
                   style={{ color: color2 === "#ffffff" ? "#1c1b1f" : color2 }}
                 >
                   {team2}
-                </h2>
-
-                <div className="relative flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowColorPicker2(!showColorPicker2)}
-                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full border border-gray-300 transition-colors shadow-sm cursor-pointer"
-                  >
-                    <div
-                      className="w-4 h-4 rounded-full border border-black/20 shadow-inner"
-                      style={{ backgroundColor: color2 }}
-                    ></div>
-                    <span className="text-[12px] font-medium text-gray-800 font-poppins">Custom</span>
-                  </button>
-
-                  {/* Color Picker Dropdown 2 */}
-                  {showColorPicker2 && (
-                    <div className="absolute top-full right-0 mt-2 p-3 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 w-[220px]">
-                      <p className="text-[11px] font-bold text-gray-600 font-poppins mb-2">Pilih Warna HMD 2:</p>
-                      <div className="grid grid-cols-5 gap-2 mb-3">
-                        {HMD_COLOR_PRESETS.map((p, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setColor2(p.hex);
-                              setShowColorPicker2(false);
-                            }}
-                            className="w-7 h-7 rounded-full border-2 border-white shadow hover:scale-110 transition-transform cursor-pointer"
-                            style={{ backgroundColor: p.hex }}
-                            title={p.name}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2 pt-2 border-t">
-                        <span className="text-[10px] text-gray-500 font-poppins">Hex:</span>
-                        <input
-                          type="color"
-                          value={color2}
-                          onChange={(e) => setColor2(e.target.value)}
-                          className="w-7 h-7 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={color2}
-                          onChange={(e) => setColor2(e.target.value)}
-                          className="w-20 text-[11px] font-mono border rounded px-1.5 py-0.5"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Scrollable Container on Screen */}
-            <div className="w-full overflow-x-auto pb-4">
-              {/* Target for PDF & PNG Export (Full Unclipped Width) */}
-              <div ref={exportRef} className="w-max min-w-full flex flex-col gap-4 bg-white p-5 rounded-xl">
-                {/* Match Header with Playing HMD Teams */}
-                <div className="w-full flex flex-row items-center justify-between px-3 pb-3 border-b-2 border-black">
-                  <div className="flex items-center gap-3">
-                    <h3
-                      className="font-black text-[22px] font-poppins uppercase tracking-wide whitespace-nowrap"
-                      style={{ color: color1 === "#ffffff" ? "#1c1b1f" : color1 }}
-                    >
-                      {team1}
-                    </h3>
-                    <span
-                      className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white whitespace-nowrap shrink-0"
-                      style={{ backgroundColor: color1 === "#ffffff" ? "#202224" : color1 }}
-                    >
-                      {team1Score} PTS
-                    </span>
-                  </div>
-
-                  <span className="font-black text-[18px] text-[#8b0000] font-poppins whitespace-nowrap shrink-0 mx-4">
-                    VS
-                  </span>
-
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="font-extrabold text-[13px] font-poppins px-3 py-0.5 rounded text-white whitespace-nowrap shrink-0"
-                      style={{ backgroundColor: color2 === "#ffffff" ? "#202224" : color2 }}
-                    >
-                      {team2Score} PTS
-                    </span>
-                    <h3
-                      className="font-black text-[22px] font-poppins uppercase tracking-wide whitespace-nowrap"
-                      style={{ color: color2 === "#ffffff" ? "#1c1b1f" : color2 }}
-                    >
-                      {team2}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Side-by-Side Dual Tables */}
-                <div className="flex flex-row items-start gap-4">
-                  {/* Table Team 1 */}
-                  <div className="flex-1 min-w-[600px]">
-                    {renderScoringTable(1, team1, players1List, color1)}
-                  </div>
-
-                  {/* Table Team 2 */}
-                  <div className="flex-1 min-w-[600px]">
-                    {renderScoringTable(2, team2, players2List, color2)}
-                  </div>
-                </div>
+                </h3>
               </div>
             </div>
+
+            {/* Side-by-Side Dual Tables */}
+            <div className="flex flex-row items-start gap-4">
+              {/* Table Team 1 */}
+              <div className="flex-1 min-w-[600px]">
+                {renderScoringTable(1, team1, players1List, color1)}
+              </div>
+
+              {/* Table Team 2 */}
+              <div className="flex-1 min-w-[600px]">
+                {renderScoringTable(2, team2, players2List, color2)}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Bottom Actions Row */}
         <div className="w-full flex flex-wrap justify-between items-center gap-4 mt-8 border-t pt-6">

@@ -1,7 +1,8 @@
 {
-  "name": "frontend",
+  "name": "ibl-frontend",
   "version": "0.1.0",
   "private": true,
+  "description": "Proyek ini dibangun menggunakan Next.js dan merupakan antarmuka (UI) utama untuk sistem IBL 2K26.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
