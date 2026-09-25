@@ -65,7 +65,7 @@ export const TeamDetailSection = ({
         {/* 1. Team Statistic Table */}
         <div className="mb-10">
           <h3 className="text-base font-extrabold text-[#2d3748] mb-3">Team Statistic</h3>
-          <div className="overflow-x-auto border border-black rounded-lg max-w-2xl">
+          <div className="overflow-x-auto rounded-lg overflow-hidden border border-gray-200/80 max-w-2xl">
             <table className="w-full text-center text-sm">
               <thead className="bg-[#D9CDBF] font-bold text-[#2d3748]">
                 <tr>
@@ -116,7 +116,7 @@ export const TeamDetailSection = ({
           <h3 className="text-base font-extrabold text-[#2d3748] mb-3">
             Player Total Statistic
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-black">
+          <div className="overflow-x-auto rounded-lg overflow-hidden border border-gray-200/80">
             <table className="w-full text-center text-sm border-collapse">
               <thead className="bg-[#D9CDBF] font-bold text-[#2d3748]">
                 <tr>
@@ -160,7 +160,7 @@ export const TeamDetailSection = ({
           <h3 className="text-base font-extrabold text-[#2d3748] mb-3">
             Player Average Statistic
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-black">
+          <div className="overflow-x-auto rounded-lg overflow-hidden border border-gray-200/80">
             <table className="w-full text-center text-sm border-collapse">
               <thead className="bg-[#D9CDBF] font-bold text-[#2d3748]">
                 <tr>

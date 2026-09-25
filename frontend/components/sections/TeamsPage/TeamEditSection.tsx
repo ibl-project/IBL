@@ -223,7 +223,7 @@ export const TeamEditSection = ({
           <h3 className="text-base font-extrabold text-[#2d3748] mb-3">
             Team Statistic
           </h3>
-          <div className="overflow-x-auto border border-black rounded-lg max-w-2xl">
+          <div className="overflow-x-auto rounded-lg overflow-hidden border border-gray-200/80 max-w-2xl">
             <table className="w-full text-center text-sm">
               <thead className="bg-[#D9CDBF] font-bold text-[#2d3748]">
                 <tr>
@@ -299,13 +299,13 @@ export const TeamEditSection = ({
             <button
               type="button"
               onClick={handleAddPlayer}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E88E5] hover:bg-[#1565C0] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              className="flex items-center gap-2 px-4 py-2 bg-[#1E88E5] hover:bg-[#1565C0] text-white rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Tambah Pemain</span>
+              <span>Tambah Pemain</span>
             </button>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-black">
+          <div className="overflow-x-auto rounded-lg overflow-hidden border border-gray-200/80">
             <table className="w-full text-center text-sm border-collapse">
               <thead className="bg-[#D9CDBF] font-bold text-[#2d3748]">
                 <tr>
@@ -385,7 +385,7 @@ export const TeamEditSection = ({
           <h3 className="text-base font-extrabold text-[#2d3748] mb-3">
             Player Average Statistic
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-black">
+          <div className="overflow-x-auto rounded-lg overflow-hidden border border-gray-200/80">
             <table className="w-full text-center text-sm border-collapse">
               <thead className="bg-[#D9CDBF] font-bold text-[#2d3748]">
                 <tr>

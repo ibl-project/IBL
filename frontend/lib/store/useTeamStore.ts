@@ -72,6 +72,7 @@ interface TeamState {
     players?: { name: string; nopung?: string; isCaptain?: boolean }[];
   }) => Team;
   deleteTeam: (teamId: string) => void;
+  deleteTeams: (teamIds: string[]) => void;
   addPlayer: (
     teamId: string,
     player: { name: string; nopung?: string; isCaptain?: boolean }
@@ -84,7 +85,8 @@ interface TeamState {
       playerName?: string;
       nopung?: string;
       isCaptain?: boolean;
-    }>
+    }>,
+    overwriteExisting?: boolean
   ) => void;
   getTeamById: (teamId: string) => Team | undefined;
   getTeamByName: (teamName: string) => Team | undefined;
@@ -229,6 +231,13 @@ export const useTeamStore = create<TeamState>()(
         }));
       },
 
+      deleteTeams: (teamIds: string[]) => {
+        const idSet = new Set(teamIds);
+        set((state) => ({
+          teams: state.teams.filter((t) => !idSet.has(t.id)),
+        }));
+      },
+
       addPlayer: (teamId: string, player) => {
         set((state) => ({
           teams: state.teams.map((team) => {
@@ -262,8 +271,16 @@ export const useTeamStore = create<TeamState>()(
         }));
       },
 
-      importTeamsFromRawData: (rawRows) => {
-        // Group raw rows (e.g. from XLSX / CSV export) by teamName
+      importTeamsFromRawData: (rawRows, overwriteExisting = false) => {
+        const currentTeams = [...get().teams];
+
+        // Hitung ID numerik tertinggi saat ini untuk ID tim baru
+        let maxId = currentTeams.reduce((max, t) => {
+          const num = parseInt(t.id, 10);
+          return !isNaN(num) && num > max ? num : max;
+        }, 0);
+
+        // Kelompokkan data baris file berdasarkan nama tim
         const teamsMap = new Map<string, { group: string; players: Player[] }>();
 
         rawRows.forEach((row) => {
@@ -290,23 +307,76 @@ export const useTeamStore = create<TeamState>()(
           }
         });
 
-        const newTeamsList: Team[] = [];
-        let index = 1;
+        // Gabungkan ke daftar tim yang sudah ada (tidak menghapus tim yang ada)
         teamsMap.forEach((data, tName) => {
-          newTeamsList.push({
-            id: String(index),
-            name: tName,
-            group: data.group,
-            logo: "/images/LOGO_1.svg",
-            teamStats: createDefaultTeamStats(),
-            players: data.players.length > 0 ? data.players : createInitialPlayersForTeam(),
-          });
-          index++;
+          const existingTeamIndex = currentTeams.findIndex(
+            (t) => t.name.toLowerCase() === tName.toLowerCase()
+          );
+
+          if (existingTeamIndex !== -1) {
+            const existingTeam = currentTeams[existingTeamIndex];
+
+            if (overwriteExisting && data.players.length > 0) {
+              // Mode timpa (overwrite): gantikan group dan seluruh roster pemain dengan data baru
+              currentTeams[existingTeamIndex] = {
+                ...existingTeam,
+                group: data.group || existingTeam.group,
+                players: data.players.map((p, idx) => ({ ...p, id: idx + 1 })),
+              };
+            } else {
+              // Mode lewati/gabung (non-overwrite):
+              const isDummyOrBogus =
+                existingTeam.players.length === 0 ||
+                existingTeam.players.every(
+                  (p) =>
+                    p.name.toLowerCase() === tName.toLowerCase() ||
+                    p.name.toLowerCase().startsWith("pemain ")
+                );
+
+              if (isDummyOrBogus && data.players.length > 0) {
+                // Gantikan langsung jika pemain sebelumnya hanya dummy atau bogus
+                currentTeams[existingTeamIndex] = {
+                  ...existingTeam,
+                  group: data.group || existingTeam.group,
+                  players: data.players.map((p, idx) => ({ ...p, id: idx + 1 })),
+                };
+              } else {
+                // Jika tim sudah punya pemain riil, gabungkan pemain baru yang belum ada
+                const existingPlayers = [...existingTeam.players];
+                let maxPId = existingPlayers.reduce((max, p) => (p.id > max ? p.id : max), 0);
+
+                data.players.forEach((newP) => {
+                  const exists = existingPlayers.some(
+                    (ep) => ep.name.toLowerCase() === newP.name.toLowerCase()
+                  );
+                  if (!exists) {
+                    maxPId++;
+                    existingPlayers.push({ ...newP, id: maxPId });
+                  }
+                });
+
+                currentTeams[existingTeamIndex] = {
+                  ...existingTeam,
+                  group: data.group || existingTeam.group,
+                  players: existingPlayers,
+                };
+              }
+            }
+          } else {
+            // Jika tim belum ada, buat tim baru dan tambahkan
+            maxId++;
+            currentTeams.push({
+              id: String(maxId),
+              name: tName,
+              group: data.group,
+              logo: "/images/LOGO_1.svg",
+              teamStats: createDefaultTeamStats(),
+              players: data.players.length > 0 ? data.players : createInitialPlayersForTeam(),
+            });
+          }
         });
 
-        if (newTeamsList.length > 0) {
-          set({ teams: newTeamsList });
-        }
+        set({ teams: currentTeams });
       },
 
       getTeamById: (teamId: string) => {
